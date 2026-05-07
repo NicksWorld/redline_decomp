@@ -25,17 +25,21 @@ Mutex::~Mutex() {
 }
 
 // FUNCTION: REDLINE 0x004d2a3c
-bool Mutex::Acquire(DWORD timeout) {
+BOOL Mutex::Acquire(DWORD timeout) {
     DWORD res = WaitForSingleObject(this->lock, timeout);
     if (res == 0) {
         this->state = 1;
+        return false;
+    } else {
+        return true;
     }
-    return res != 0;
 }
 
 // FUNCTION: REDLINE 0x004d2a77
-bool Mutex::Release() {
+BOOL Mutex::Release() {
     this->state = 0;
     BOOL res = ReleaseMutex(this->lock);
-    return res != 1;
+    if (res == 1)
+        return false;
+    return true;
 }

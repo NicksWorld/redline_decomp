@@ -10,6 +10,6 @@ class Mutex {
 public:
     Mutex(char* name);
     ~Mutex();
-    bool Acquire(DWORD timeout);
-    bool Release();
+    BOOL Acquire(DWORD timeout);
+    BOOL Release();
 };
