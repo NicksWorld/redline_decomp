@@ -1,7 +1,7 @@
 #include "mutex.h"
 
 // FUNCTION: REDLINE 0x004d2970
-Mutex::Mutex(char* name) {
+Mutex::Mutex(char *name) {
     this->state = 0;
     if (name != NULL) {
         this->name = new char[strlen(name) + 1];

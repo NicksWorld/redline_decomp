@@ -8,16 +8,16 @@ struct State {};
 
 class EngineState {
     bool valid_transitions[STATE_COUNT][STATE_COUNT];
-    State* states[14];
+    State *states[14];
     int active_state;
     int transition_queue[5];
     int transition_queue_len;
     int transition_queue_capacity;
     bool unk;
-    Mutex* lock;
-    Mutex* queue_lock;
+    Mutex *lock;
+    Mutex *queue_lock;
 
-    public:
+  public:
     EngineState();
     bool SetupStates();
     int GetState();

@@ -1,7 +1,7 @@
 #include "enginestate.h"
 
-#include <windows.h>
 #include <stdio.h>
+#include <windows.h>
 
 #include "globals.h"
 #include "log.h"
@@ -37,58 +37,56 @@ int EngineState::GetQueuedState(bool peek) {
 }
 
 // FUNCTION: REDLINE 0x00541e37
-int EngineState::GetState() {
-    return this->active_state;
-}
+int EngineState::GetState() { return this->active_state; }
 
 // FUNCTION: REDLINE 0x00541720
-void StateName(int state, char* out) {
-    switch(state) {
-        case 0:
-            strcpy(out, "STATE_NONE");
-            break;
-        case 1:
-            strcpy(out, "STATE_DEBUG");
-            break;
-        case 2:
-            strcpy(out, "STATE_INIT_AV");
-            break;
-        case 3:
-            strcpy(out, "STATE_INTRO");
-            break;
-        case 4:
-            strcpy(out, "STATE_START_MENU");
-            break;
-        case 5:
-            strcpy(out, "STATE_GAME_INIT");
-            break;
-        case 6:
-            strcpy(out, "STATE_GAME_PLAY");
-            break;
-        case 7:
-            strcpy(out, "STATE_VIDEO_PLAYBACK");
-            break;
-        case 8:
-            strcpy(out, "STATE_GAME_MENU");
-            break;
-        case 9:
-            strcpy(out, "STATE_NETWORK_SETUP");
-            break;
-        case 10:
-            strcpy(out, "STATE_NETWORK_DOWNLOAD");
-            break;
-        case 11:
-            strcpy(out, "STATE_NETWORK_TALLY");
-            break;
-        case 12:
-            strcpy(out, "STATE_CONSOLE_PLAY");
-            break;
-        case 13:
-            strcpy(out, "STATE_SHUTDOWN");
-            break;
-        default: 
-            strcpy(out, "STATE_NONE");
-            break;
+void StateName(int state, char *out) {
+    switch (state) {
+    case 0:
+        strcpy(out, "STATE_NONE");
+        break;
+    case 1:
+        strcpy(out, "STATE_DEBUG");
+        break;
+    case 2:
+        strcpy(out, "STATE_INIT_AV");
+        break;
+    case 3:
+        strcpy(out, "STATE_INTRO");
+        break;
+    case 4:
+        strcpy(out, "STATE_START_MENU");
+        break;
+    case 5:
+        strcpy(out, "STATE_GAME_INIT");
+        break;
+    case 6:
+        strcpy(out, "STATE_GAME_PLAY");
+        break;
+    case 7:
+        strcpy(out, "STATE_VIDEO_PLAYBACK");
+        break;
+    case 8:
+        strcpy(out, "STATE_GAME_MENU");
+        break;
+    case 9:
+        strcpy(out, "STATE_NETWORK_SETUP");
+        break;
+    case 10:
+        strcpy(out, "STATE_NETWORK_DOWNLOAD");
+        break;
+    case 11:
+        strcpy(out, "STATE_NETWORK_TALLY");
+        break;
+    case 12:
+        strcpy(out, "STATE_CONSOLE_PLAY");
+        break;
+    case 13:
+        strcpy(out, "STATE_SHUTDOWN");
+        break;
+    default:
+        strcpy(out, "STATE_NONE");
+        break;
     }
 }
 
@@ -121,10 +119,11 @@ EngineState::EngineState() {
     this->transition_queue_len = 0;
     this->transition_queue_capacity = 5;
 
-    if (!this->SetupStates()) return;
+    if (!this->SetupStates())
+        return;
 
-    *((int*)0x005cd178) = 0x00540c98; // Function pointer
-    *((int*)0x005cd174) = 0x00540bd0; // Function pointer
+    *((int *)0x005cd178) = 0x00540c98; // Function pointer
+    *((int *)0x005cd174) = 0x00540bd0; // Function pointer
     this->unk = false;
     this->lock = new Mutex(NULL);
     this->queue_lock = new Mutex(NULL);

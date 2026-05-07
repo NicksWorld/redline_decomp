@@ -4,11 +4,11 @@
 
 class Mutex {
     HANDLE lock;
-    char* name;
+    char *name;
     int state;
 
-public:
-    Mutex(char* name);
+  public:
+    Mutex(char *name);
     ~Mutex();
     BOOL Acquire(DWORD timeout);
     BOOL Release();

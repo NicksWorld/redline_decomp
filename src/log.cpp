@@ -1,21 +1,22 @@
 #include "log.h"
 
-#include <windows.h>
-#include <stdio.h>
 #include <fstream.h>
+#include <stdio.h>
 #include <time.h>
+#include <windows.h>
 
 // GLOBAL: REDLINE 0x00587578
 int flags = 0x1a4;
 
 // Stack is a bit scrambled, and inlining isn't applying on ofstream methods
 // FUNCTION: REDLINE 0x004a8e90
-void Log::Open(char* filename, int truncate) {
+void Log::Open(char *filename, int truncate) {
     int open_flags;
-    struct tm* tm;
-    ofstream* stream;
+    struct tm *tm;
+    ofstream *stream;
     time_t t;
-    if (filename != NULL && strlen(filename) != 0 && strlen(filename) < 0x100) {;
+    if (filename != NULL && strlen(filename) != 0 && strlen(filename) < 0x100) {
+        ;
         strcpy(this->filename, filename);
 
         stream = NULL;
@@ -25,10 +26,12 @@ void Log::Open(char* filename, int truncate) {
         } else {
             open_flags |= ios::app;
         }
-        
+
         stream = new ofstream(filename, open_flags, flags);
-        if (stream == NULL) return;
-        if ((stream->rdstate() & 6) == 2) return;
+        if (stream == NULL)
+            return;
+        if ((stream->rdstate() & 6) == 2)
+            return;
         this->unk = 0;
         time(&t);
         tm = localtime(&t);
@@ -49,4 +52,4 @@ void Log::Open(char* filename, int truncate) {
 }
 
 // FUNCTION: REDLINE 0x004a94a1
-void Log::Debug(char* msg) {}
+void Log::Debug(char *msg) {}

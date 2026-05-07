@@ -1,8 +1,8 @@
-#include <windows.h>
 #include <stdio.h>
+#include <windows.h>
 
-#include "resource.h"
 #include "log.h"
+#include "resource.h"
 
 // GLOBAL: REDLINE 0x005c3f70
 Log g_Log;
@@ -34,11 +34,11 @@ BOOL RegisterWindowClass() {
 }
 
 // STUB: REDLINE 0x00551d73
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow) {
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
+                   int nCmdShow) {
     HWND existing_window = FindWindowA("Redline", NULL);
     if (!IsWindow(existing_window)) {
-
     }
-    
+
     return 0;
 }
