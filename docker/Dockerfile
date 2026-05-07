@@ -8,10 +8,13 @@ RUN export WINEDEBUG=-all
 
 RUN wine wineboot
 
-RUN wget https://github.com/itsmattkc/MSVC600/archive/17bae53fa330df7b576f25f1f604e4214076a650.zip
-RUN unzip 17bae53fa330df7b576f25f1f604e4214076a650.zip
-RUN mv MSVC600-17bae53fa330df7b576f25f1f604e4214076a650 ~/.wine/drive_c/msvc
-RUN rm 17bae53fa330df7b576f25f1f604e4214076a650.zip
+# RUN wget https://github.com/itsmattkc/MSVC600/archive/17bae53fa330df7b576f25f1f604e4214076a650.zip
+# RUN unzip 17bae53fa330df7b576f25f1f604e4214076a650.zip
+# RUN mv MSVC600-17bae53fa330df7b576f25f1f604e4214076a650 ~/.wine/drive_c/msvc
+# RUN rm 17bae53fa330df7b576f25f1f604e4214076a650.zip
+
+RUN git clone https://seed.tty.garden/nmcdaniel/MSVC600
+RUN mv MSVC600 ~/.wine/drive_c/msvc
 
 RUN wget https://github.com/Kitware/CMake/releases/download/v3.26.6/cmake-3.26.6-windows-i386.zip
 RUN unzip cmake-3.26.6-windows-i386.zip -d ~/.wine/drive_c

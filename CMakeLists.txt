@@ -10,6 +10,9 @@ add_compile_options("/MT")
 
 add_executable(redline WIN32
     src/main.cpp
+    src/enginestate.cpp
+    src/mutex.cpp
+    src/log.cpp
 )
 # target_link_options(redline PRIVATE "/OPT:REF")
 reccmp_add_target(redline ID REDLINE)
