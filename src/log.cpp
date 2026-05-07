@@ -8,14 +8,17 @@
 // GLOBAL: REDLINE 0x00587578
 int flags = 0x1a4;
 
+// Stack is a bit scrambled, and inlining isn't applying on ofstream methods
 // FUNCTION: REDLINE 0x004a8e90
 void Log::Open(char* filename, int truncate) {
     int open_flags;
-    // ofstream* stream;
+    struct tm* tm;
+    ofstream* stream;
+    time_t t;
     if (filename != NULL && strlen(filename) != 0 && strlen(filename) < 0x100) {;
         strcpy(this->filename, filename);
 
-        ofstream* stream = NULL;
+        stream = NULL;
         open_flags = ios::out | ios::binary;
         if (truncate != 0) {
             open_flags |= ios::trunc;
@@ -27,8 +30,6 @@ void Log::Open(char* filename, int truncate) {
         if (stream == NULL) return;
         if ((stream->rdstate() & 6) == 2) return;
         this->unk = 0;
-        struct tm* tm;
-        time_t t;
         time(&t);
         tm = localtime(&t);
 

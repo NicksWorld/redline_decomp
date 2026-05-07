@@ -13,7 +13,10 @@ add_executable(redline WIN32
     src/enginestate.cpp
     src/mutex.cpp
     src/log.cpp
+
+    res/redline.rc
 )
+target_include_directories(redline PRIVATE res)
 # target_link_options(redline PRIVATE "/OPT:REF")
 reccmp_add_target(redline ID REDLINE)
 
