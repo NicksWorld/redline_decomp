@@ -1,0 +1,15 @@
+targets:
+  REDLINE:
+    filename: Redline.exe
+    source_root: .
+    hash:
+      sha256: 8d5af7037e2f429ea429e8e4695e93f48f2c0d971cbb5f4dc03e58a46e09403c
+    data_sources: []
+    encoding:
+    ghidra:
+      ignore_types: []
+      ignore_functions: []
+      name_substitutions: []
+      allow_hash_mismatch: false
+    report:
+      ignore_functions: []
