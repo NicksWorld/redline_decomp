@@ -10,7 +10,7 @@ int flags = 0x1a4;
 
 // Stack is a bit scrambled, and inlining isn't applying on ofstream methods
 // FUNCTION: REDLINE 0x004a8e90
-void Log::Open(char *filename, int truncate) {
+void Log::Open(const char *filename, int truncate) {
     int open_flags;
     struct tm *tm;
     ofstream *stream;
@@ -52,4 +52,4 @@ void Log::Open(char *filename, int truncate) {
 }
 
 // FUNCTION: REDLINE 0x004a94a1
-void Log::Debug(char *msg) {}
+void Log::Debug(const char *msg) {}
