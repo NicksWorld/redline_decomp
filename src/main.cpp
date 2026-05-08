@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <windows.h>
 #include <time.h>
+#include <sys/stat.h>
 
 #include "log.h"
 #include "resource.h"
 #include "3dnow.h"
+#include "pack.h"
 
 // GLOBAL: REDLINE 0x005c3f70
 Log g_Log;
@@ -22,6 +24,9 @@ time_t g_time;
 
 // GLOBAL: REDLINE 0x005ce601
 bool g_has3DNow;
+
+// GLOBAL: REDLINE 0x005cebb4
+int g_unk;
 
 // FUNCTION: REDLINE 0x00551cd9
 BOOL RegisterWindowClass() {
@@ -43,6 +48,12 @@ BOOL RegisterWindowClass() {
     }
     return true;
 }
+
+// STUB: REDLINE 0x005748ff
+void UnkSetTLS(time_t t) {}
+
+// STUB: REDLINE 0x0053fb64
+void InitGlobals() {}
 
 // FUNCTION: REDLINE 0x00551d73
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow) {
@@ -71,10 +82,55 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
     g_Log.Debug("Daedalus Engine Initializing");
 
     g_time = time(0);
-    // TODO: Gets stored in thread local storage arrays?
+
+    // TODO: Stubs
+    UnkSetTLS(g_time);
+    InitGlobals();
+
     if (_AMD3D_DetectHardware() == 0) {
         g_Log.Debug("AMD 3DNow! detected");
         g_has3DNow = true;
+    }
+    g_unk = 1;
+
+    char exe[32];
+    LPSTR cmdline = GetCommandLineA();
+    char* quot = strchr(cmdline, '"');
+    if (quot != NULL) {
+        strcpy(exe, quot + 1);
+        quot = strchr(exe, '"');
+        if (quot != NULL) {
+            *quot = 0; 
+        }
+    } else {
+        strcpy(exe, "redline.exe");
+    }
+    
+    struct _stat buf;
+    if (_stat(exe, &buf)) {
+        // Exists
+        HANDLE file = CreateFileA(exe, GENERIC_READ, 1, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+        if (file != (HANDLE)-1) {
+            FILETIME last_write;
+            FILETIME last_write_local;
+            SYSTEMTIME sys;
+            GetFileTime(file, NULL, NULL, &last_write);
+            FileTimeToLocalFileTime(&last_write, &last_write_local);
+            FileTimeToSystemTime(&last_write_local, &sys);
+            CloseHandle(file);
+
+            char msg[128];
+            sprintf(msg, "Execute: %s  (Date: %d/%02d/%02d %d:%02d:%02d  Size: %d)", exe, sys.wMonth, sys.wDay, sys.wYear, sys.wHour, sys.wMinute, sys.wSecond, buf.st_size);
+            g_Log.Debug(msg);
+        }
+    }
+
+    if (g_unk != 0) {
+        if(!LoadPack("Redline.bgd", 0, 0)) {
+            MessageBoxA(NULL, "Fatal Error Loading:  Redline.bgd\n\n\nConsult the readme file for more information.", NULL, MB_ICONEXCLAMATION);
+            return 0;
+        }
+        // TODO
     }
 
     return 0;

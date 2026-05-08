@@ -13,6 +13,8 @@ add_executable(redline WIN32
     src/enginestate.cpp
     src/mutex.cpp
     src/log.cpp
+    src/pack.cpp
+    thirdparty/3dnow/amddcpu.cpp
 
     res/redline.rc
 )

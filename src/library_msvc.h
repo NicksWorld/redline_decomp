@@ -1,8 +1,11 @@
 #if 0
+
 // LIBRARY: REDLINE 0x00574af0
 // _strlen
 // LIBRARY: REDLINE 0x00574b70
 // _strcpy
+// LIBRARY: REDLINE 0x00575270
+// _strchr
 
 // LIBRARY: REDLINE 0x00574395
 // ??2@YAPAXI@Z
@@ -34,5 +37,8 @@
 
 // LIBRARY: REDLINE 0x00576c1a
 // _asctime
+
+// LIBRARY: REDLINE 0x0057543b
+// __stat
 
 #endif
