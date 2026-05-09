@@ -27,11 +27,11 @@ bool LoadPack(const char* name, int unk1, int unk2) {
         return false;
     }
 
-    SYSTEMTIME sys;
-    struct _stat buf;
-    int exists = _stat(name, &buf);
+    SYSTEMTIME system_time;
+    struct _stat buffer;
+    int exists = _stat(name, &buffer);
     if (exists == 0) {
-        if ((unk1 > 0 && unk2 > 0) && (unk1 != buf.st_mtime || unk2 != buf.st_size)) {
+        if ((unk2 > 0 && unk1 > 0) && (unk1 != buffer.st_mtime || unk2 != buffer.st_size)) {
             return false;
         }
         FILETIME last_write_local;
@@ -40,11 +40,11 @@ bool LoadPack(const char* name, int unk1, int unk2) {
             FILETIME last_write;
             GetFileTime(file, NULL, NULL, &last_write);
             FileTimeToLocalFileTime(&last_write, &last_write_local);
-            FileTimeToSystemTime(&last_write_local, &sys);
+            FileTimeToSystemTime(&last_write_local, &system_time);
             CloseHandle(file);
 
             char msg[128];
-            sprintf(msg, "Pack: %s  (Date: %d/%02d/%02d %d:%02d:%02d  Size: %d)", name, sys.wMonth, sys.wDay, sys.wYear, sys.wHour, sys.wMinute, sys.wSecond, buf.st_size);
+            sprintf(msg, "Pack: %s  (Date: %d/%02d/%02d %d:%02d:%02d  Size: %d)", name, system_time.wMonth, system_time.wDay, system_time.wYear, system_time.wHour, system_time.wMinute, system_time.wSecond, buffer.st_size);
             g_Log.Debug(msg);
         }
     }
