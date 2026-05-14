@@ -6,7 +6,7 @@
 #include <windows.h>
 
 // GLOBAL: REDLINE 0x00587578
-int protection = 0x1a4;
+int g_protection = 0x1a4;
 
 // Stack is a bit scrambled, and inlining isn't applying on ofstream methods
 // FUNCTION: REDLINE 0x004a8e90
@@ -24,10 +24,10 @@ void Log::Open(const char *filename, int truncate) {
             flags |= ios::app;
         }
 
-        ostream = new ofstream(filename, flags, protection);
+        ostream = new ofstream(filename, flags, g_protection);
         if (ostream == NULL)
             goto cleanup;
-        if ((ostream->rdstate() & 6) == 2) {
+        if (ostream->bad()) {
             goto cleanup;
         }
 
@@ -45,13 +45,16 @@ void Log::Open(const char *filename, int truncate) {
         }
 
         *ostream << "// Program started on " << msg << "\r\n";
-cleanup:
-    if (ostream) {
-        delete ostream;
-        ostream = NULL;
-    }
+    cleanup:
+        if (ostream != NULL) {
+            delete ostream;
+            ostream = NULL;
+        }
     }
 }
 
 // FUNCTION: REDLINE 0x004a94a1
-void Log::Debug(const char *msg) {}
+void Log::Debug(const char *msg) {
+    // Really, this method is completely empty
+    MessageBoxA(NULL, msg, NULL, MB_ICONWARNING);
+}

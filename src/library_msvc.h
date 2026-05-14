@@ -6,6 +6,10 @@
 // _strcpy
 // LIBRARY: REDLINE 0x00575270
 // _strchr
+// LIBRARY: REDLINE 0x00575930
+// _strrchr
+// LIBRARY: REDLINE 0x005809c0
+// __strcmpi
 
 // LIBRARY: REDLINE 0x00574395
 // ??2@YAPAXI@Z
@@ -25,9 +29,17 @@
 // ??0ofstream@@QAE@PBDHH@Z
 // ofstream constructor
 
+// LIBRARY: REDLINE 0x00572cd0
+// ??0ifstream@@QAE@PBDHH@Z
+// ifstream constructor
+
 // LIBRARY: REDLINE 0x00572ef1
 // ??6ostream@@QAEAAV0@PBD@Z
 // operator<<
+
+// LIBRARY: REDLINE 0x00573397
+// ?read@istream@@QAEAAV1@PADH@Z
+// istream::read
 
 // LIBRARY: REDLINE 0x005764cb
 // _time
@@ -40,5 +52,21 @@
 
 // LIBRARY: REDLINE 0x0057543b
 // __stat
+
+// LIBRARY: REDLINE 0x00574010
+// _memcpy
+
+// LIBRARY: REDLINE 0x005733df
+// ?seekg@istream@@QAEAAV1@JW4seek_dir@ios@@@Z
+// istream->seekg
+
+// LIBRARY: REDLINE 0x0057344b
+// ?tellg@istream@@QAEJXZ
+
+// LIBRARY: REDLINE 0x00572d9a
+// ?close@ifstream@@QAEXXZ
+
+// LIBRARY: REDLINE 0x005748ff
+// _srand
 
 #endif

@@ -2,11 +2,14 @@
 #include <windows.h>
 #include <time.h>
 #include <sys/stat.h>
+#include <winuser.h>
 
 #include "log.h"
 #include "resource.h"
 #include "3dnow.h"
+#include "scripts.h"
 #include "pack.h"
+#include "globals.h"
 
 // GLOBAL: REDLINE 0x005c3f70
 Log g_Log;
@@ -18,6 +21,9 @@ int g_nCmdShow;
 
 // GLOBAL: REDLINE 0x005ceb1c
 char g_registryKey[128];
+
+// GLOBAL: REDLINE 0x005ccf50
+void* g_GameData;
 
 // GLOBAL: REDLINE 0x005cebec
 time_t g_time;
@@ -82,9 +88,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
     g_Log.Debug("Daedalus Engine Initializing");
 
     g_time = time(0);
+    srand(g_time);
 
-    // TODO: Stubs
-    UnkSetTLS(g_time);
     InitGlobals();
 
     if (_AMD3D_DetectHardware() == 0) {
@@ -107,7 +112,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
     }
     
     struct _stat buf;
-    if (_stat(exe, &buf)) {
+    int exists = _stat(exe, &buf);
+    if (exists) {
         // Exists
         HANDLE file = CreateFileA(exe, GENERIC_READ, 1, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
         if (file != (HANDLE)-1) {
@@ -130,7 +136,30 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
             MessageBoxA(NULL, "Fatal Error Loading:  Redline.bgd\n\n\nConsult the readme file for more information.", NULL, MB_ICONEXCLAMATION);
             return 0;
         }
-        // TODO
+        char pathbuf[128];
+        strcpy(pathbuf, "*.bgd");
+        WIN32_FIND_DATA findFileData;
+        HANDLE file = FindFirstFileA(pathbuf, &findFileData);
+        if (file != (HANDLE)-1) {
+            strcpy(pathbuf, findFileData.cFileName);
+            if (strcmpi(pathbuf, "redline.bgd") != 0) {
+                LoadPack(pathbuf, 0, 0);
+            }
+            while(FindNextFileA(file, &findFileData)) {
+                strcpy(pathbuf, findFileData.cFileName);
+                if (strcmpi(pathbuf, "redline.bgd") != 0) {
+                    LoadPack(pathbuf, 0, 0);
+                }
+            }
+        }
+    }
+
+    if (LoadScripts("PC_Script.thg") || LoadScripts("..\\GameData\\PC_Script.thg")) {
+        g_GameData = g_Scripts.Lookup(20, "GameData", NULL);
+        if (!g_GameData) {
+            MessageBoxA(NULL, "Fatal Error Loading: Misc data script 'GameData'", NULL, MB_ICONEXCLAMATION);
+            return 0;
+        }
     }
 
     return 0;
