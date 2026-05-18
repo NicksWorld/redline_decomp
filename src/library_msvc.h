@@ -69,4 +69,10 @@
 // LIBRARY: REDLINE 0x005748ff
 // _srand
 
+// LIBRARY: REDLINE 0x005762c6
+// _isspace
+
+// LIBRARY: REDLINE 0x00575957
+// _strlwr
+
 #endif

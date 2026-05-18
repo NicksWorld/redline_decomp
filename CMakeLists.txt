@@ -16,6 +16,7 @@ add_executable(redline WIN32
     src/pack.cpp
     src/scripts.cpp
     src/file.cpp
+    src/config.cpp
     thirdparty/3dnow/amddcpu.cpp
 
     # Game state methods
@@ -33,7 +34,7 @@ set_property(TARGET redline PROPERTY PREFIX "")
 set_property(TARGET redline PROPERTY SUFFIX ".exe")
 
 
-set(CMAKE_CXX_FLAGS "/W3 /GX /D \"WIN32\" /D \"_WINDOWS\"")
+set(CMAKE_CXX_FLAGS "/W3 /EHsc /GX /D \"WIN32\" /D \"_WINDOWS\"")
 set(CMAKE_CXX_FLAGS_DEBUG "/Gm /Zi /Od /D \"_DEBUG\"")
 set(CMAKE_CXX_FLAGS_RELEASE "/GX /Od /Ob2 \"NDEBUG\"")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/Zi /Ob1 /D \"NDEBUG\"")
