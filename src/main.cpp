@@ -10,9 +10,14 @@
 #include "scripts.h"
 #include "pack.h"
 #include "globals.h"
+#include "enginestate.h"
 
 // GLOBAL: REDLINE 0x005c3f70
 Log g_Log;
+// GLOBAL: REDLINE 0x005ceb14
+EngineState* g_EngineState;
+// GLOBAL: REDLINE 0x005a8c94
+StateTree* g_StateTree;
 
 // GLOBAL: REDLINE 0x005cebd0
 HINSTANCE g_hInstance;
@@ -33,6 +38,9 @@ bool g_has3DNow;
 
 // GLOBAL: REDLINE 0x005cebb4
 int g_unk;
+
+// GLOBAL: REDLINE 0x005a8f64
+short g_unknown;
 
 // FUNCTION: REDLINE 0x00551cd9
 BOOL RegisterWindowClass() {
@@ -55,11 +63,19 @@ BOOL RegisterWindowClass() {
     return true;
 }
 
-// STUB: REDLINE 0x005748ff
-void UnkSetTLS(time_t t) {}
-
 // STUB: REDLINE 0x0053fb64
 void InitGlobals() {}
+
+// Semantics uncertain
+// FUNCTION: REDLINE 0x0048F261
+void SetUnknown(short v) {
+    g_unknown = v;
+}
+
+// FUNCTION: REDLINE 0x0048F256
+short GetUnknown() {
+    return g_unknown;
+}
 
 // FUNCTION: REDLINE 0x00551d73
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow) {
@@ -160,6 +176,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
             MessageBoxA(NULL, "Fatal Error Loading: Misc data script 'GameData'", NULL, MB_ICONEXCLAMATION);
             return 0;
         }
+
+        g_EngineState = new EngineState();
+        g_StateTree = new StateTree();
+        g_StateTree->PopulateNodes();
+        StateNode* next = g_StateTree->Next(1);
+        if (!next) return 0;
+        SetUnknown(1);
+        g_EngineState->ChangeState(next->state_id);
     }
 
     return 0;

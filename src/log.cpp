@@ -27,7 +27,7 @@ void Log::Open(const char *filename, int truncate) {
         ostream = new ofstream(filename, flags, g_protection);
         if (ostream == NULL)
             goto cleanup;
-        if (ostream->bad()) {
+        if (ostream->fail() == 2) {
             goto cleanup;
         }
 

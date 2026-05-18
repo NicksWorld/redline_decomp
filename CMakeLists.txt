@@ -18,6 +18,10 @@ add_executable(redline WIN32
     src/file.cpp
     thirdparty/3dnow/amddcpu.cpp
 
+    # Game state methods
+    src/state/none.cpp
+    src/state/shutdown.cpp
+
     # res/redline.rc
 )
 target_include_directories(redline PRIVATE res)
@@ -31,8 +35,8 @@ set_property(TARGET redline PROPERTY SUFFIX ".exe")
 
 set(CMAKE_CXX_FLAGS "/W3 /GX /D \"WIN32\" /D \"_WINDOWS\"")
 set(CMAKE_CXX_FLAGS_DEBUG "/Gm /Zi /Od /D \"_DEBUG\"")
-set(CMAKE_CXX_FLAGS_RELEASE "/Od /Ob2 \"NDEBUG\"")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/Zi /Od /Ob2 /D \"NDEBUG\"")
+set(CMAKE_CXX_FLAGS_RELEASE "/GX /Od /Ob2 \"NDEBUG\"")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/Zi /Ob1 /D \"NDEBUG\"")
 set(CMAKE_CXX_FLAGS_MINSIZEREL "/Os /D \"NDEBUG\"")
 
 set(CMAKE_EXE_LINKER_FLAGS "/machine:I386")
