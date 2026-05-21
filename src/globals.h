@@ -7,6 +7,7 @@ extern class Log g_Log;
 extern class ScriptManager g_Scripts;
 extern class EngineState* g_EngineState;
 extern class StateTree* g_StateTree;
+extern class Keybinds* g_Keybinds;
 
 // GameData script
 extern void* g_GameData;

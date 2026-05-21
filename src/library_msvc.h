@@ -75,4 +75,40 @@
 // LIBRARY: REDLINE 0x00575957
 // _strlwr
 
+// LIBRARY: REDLINE 0x005743b0
+// _memset
+
+// LIBRARY: REDLINE 0x005757f4
+// _strupr
+
+// LIBRARY: REDLINE 0x00575770
+// _strcmp
+
+// LIBRARY: REDLINE 0x00576909
+// __strdup
+
+// LIBRARY: REDLINE 0x005762ee
+// _strtok
+
+// LIBRARY: REDLINE 0x0057532c
+// _atof
+
+// LIBRARY: REDLINE 0x00574c60
+// _atol
+
+// LIBRARY: REDLINE 0x005751e0
+// _strstr
+
+// LIBRARY: REDLINE 0x00575a90
+// _strncpy
+
+// LIBRARY: REDLINE 0x005760e9
+// _fopen
+
+// LIBRARY: REDLINE 0x00575fa1
+// _fread
+
+// LIBRARY: REDLINE 0x00575f24
+// _fclose
+
 #endif

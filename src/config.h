@@ -1,30 +1,62 @@
 #pragma once
 
+union ValueInner {
+    int integer;
+    float decimal;
+    char* string;
+};
+
+enum ValueTag {
+    VALUE_SIGNED = 0,
+    VALUE_FLOAT = 1,
+    VALUE_STRING = 2,
+    VALUE_UNSIGNED = 3,
+    VALUE_BOOL = 4,
+};
+
+// Linked list node!
+class Value {
+    public:
+    char line[32];
+    ValueInner value;
+    int kind; // union tag
+    Value* next;
+    public:
+    Value();
+    ~Value();
+};
+
 class Config {
-    int* arr1;
-    int size1;
-    int *arr2;
-    int size2;
-    int *arr3;
-    int size3;
-    int *arr4;
-    int size4;
-    int *arr5;
-    int size5;
+    Value** conf_values;
+    int conf_size;
+    int *keybinds_foot;
+    int keybind_size;
+    int *mousebinds_foot;
+    int mousebind_size;
+    int *joybinds_foot;
+    int joybind_size;
+    int *jhatbinds_foot;
+    int jhatbind_size;
 
     // Further ints seem unused for sizing
-    int* arr6;
+    int* keybinds_car;
     int unused_size6;
-    int* arr7;
+    int* mousebinds_car;
     int unused_size7;
-    int* arr8;
+    int* joybinds_car;
     int unused_size8;
-    int* arr9;
+    int* jhatbinds_car;
     int unused_size9;
     public:
     Config();
+    void ResetBinds();
+    void ClearConfValues();
+    void LoadPreset(int mode);
+    void Default();
+    void DefaultConf();
     int Load();
     int ParseLine(char* line);
     int ParseMapping(char* mapping);
     int ParseOther(char* line);
+    int StoreValue(Value* v);
 };

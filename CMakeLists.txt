@@ -16,6 +16,7 @@ add_executable(redline WIN32
     src/pack.cpp
     src/scripts.cpp
     src/file.cpp
+    src/keybinds.cpp
     src/config.cpp
     thirdparty/3dnow/amddcpu.cpp
 
