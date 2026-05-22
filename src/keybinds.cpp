@@ -2,6 +2,11 @@
 
 #include <windows.h>
 
+// REMOVE imports
+#include "globals.h"
+#include "log.h"
+#include <stdio.h>
+
 struct NamedKey {
     int value;
     char name[16];
@@ -17,7 +22,7 @@ NamedKey g_KeyNames[103] = {
     {26, "["},     {27, "]"},      {28, "RET"},   {29, "LCTRL"}, {30, "A"},
     {31, "S"},     {32, "D"},      {33, "F"},     {34, "G"},     {35, "H"},
     {36, "J"},     {37, "K"},      {38, "L"},     {39, ";"},     {40, "'"},
-    {41, "`"},     {42, "LSHIFT"}, {43, "\\"},    {44, "Z"},     {45, "X"},
+    {41, "`"},     {42, "LSHFT"}, {43, "\\"},    {44, "Z"},     {45, "X"},
     {46, "C"},     {47, "V"},      {48, "B"},     {49, "N"},     {50, "M"},
     {51, ","},     {52, "."},      {53, "/"},     {54, "RSHFT"}, {55, "MULT"},
     {56, "LALT"},  {57, "SP"},     {58, "CAPS"},  {59, "F1"},    {60, "F2"},
@@ -93,12 +98,82 @@ bool InitKeybinds() {
 
 // FUNCTION: REDLINE 0x00496ab0
 Keybinds::Keybinds() {
-    memset(this->unk, -1, sizeof(this->unk));
-    memset(this->unka, 0, sizeof(this->unka));
+    memset(this->key_map, -1, sizeof(this->key_map));
+    memset(this->action_map, 0, sizeof(this->action_map));
 
     // TODO: Set values in unknown segments
 
     this->Init();
+}
+
+// FUNCTION: REDLINE 0x004986E9
+int Keybinds::KeyToInput(int key) {
+    return this->key_to_scancode[key];
+}
+
+
+// FUNCTION: REDLINE 0x0043C9B2
+int BindKey(int key, int action) {
+    return g_Keybinds->BindKey(key, action);
+}
+
+// FUNCTION: REDLINE 0x00498176
+int Keybinds::BindKey(int key, int action) {
+    if (this->InvalidKeyIndex(key)) return 1;
+    int scancode = this->KeyToInput(key);
+    return this->Bind(scancode, action);
+}
+
+// FUNCTION: REDLINE 0x00498703
+int Keybinds::MouseToInput(int mbutton) {
+    return mbutton + 256;
+}
+
+// FUNCTION: REDLINE 0x0043C9DE
+int BindMouse(int mbutton, int action) {
+    return g_Keybinds->BindMouse(mbutton, action);
+}
+
+// FUNCTION: REDLINE 0x004981BB
+int Keybinds::BindMouse(int mbutton, int action) {
+    if (this->InvalidMbuttonIndex(mbutton))
+        return 1;
+    int input = this->MouseToInput(mbutton);
+    return this->Bind(input, action);
+}
+
+// FUNCTION: REDLINE 0x00498718
+int Keybinds::JoybuttonToInput(int button) {
+    return button + 259;
+}
+
+// FUNCTION: REDLINE 0x0043CA0A
+int BindJoybutton(int button, int action) {
+    return g_Keybinds->BindJoybutton(button, action);
+}
+
+// FUNCTION: REDLINE 0x00498200
+int Keybinds::BindJoybutton(int button, int action) {
+    if (this->InvalidJoybuttonIndex(button)) return 1;
+    int input = this->JoybuttonToInput(button);
+    return this->Bind(input, action);
+}
+
+// FUNCTION: REDLINE 0x0049872D
+int Keybinds::JoyhatToInput(int button) {
+    return button + 272;
+}
+
+// FUNCTION: REDLINE 0x0043CA36
+int BindJoyhat(int button, int action) {
+    return g_Keybinds->BindJoyhat(button, action);
+}
+
+// FUNCTION: REDLINE 0x00498245
+int Keybinds::BindJoyhat(int button, int action) {
+    if (this->InvalidJoyhatIndex(button)) return 1;
+    int input = this->JoyhatToInput(button);
+    return this->Bind(input, action);
 }
 
 // FUNCTION: REDLINE 0x00498742
@@ -131,116 +206,192 @@ int Keybinds::Init() {
     for (i = 0; i < 64; ++i)
         this->action_names[g_ActionNames[i].value] = g_ActionNames[i].name;
 
-    memset(this->unk1, 0, sizeof(this->unk1));
-    memset(this->unk2, 0, sizeof(this->unk2));
+    memset(this->key_to_scancode, 0, sizeof(this->key_to_scancode));
+    memset(this->scancode_to_key, 0, sizeof(this->scancode_to_key));
 
-    this->unk1[1] = 1;
-    this->unk1[2] = 2;
-    this->unk1[3] = 3;
-    this->unk1[4] = 4;
-    this->unk1[5] = 5;
-    this->unk1[6] = 6;
-    this->unk1[7] = 7;
-    this->unk1[8] = 8;
-    this->unk1[9] = 9;
-    this->unk1[10] = 10;
-    this->unk1[11] = 11;
-    this->unk1[12] = 12;
-    this->unk1[13] = 13;
-    this->unk1[14] = 14;
-    this->unk1[15] = 15;
-    this->unk1[16] = 16;
-    this->unk1[17] = 17;
-    this->unk1[18] = 18;
-    this->unk1[19] = 19;
-    this->unk1[20] = 20;
-    this->unk1[21] = 21;
-    this->unk1[22] = 22;
-    this->unk1[23] = 23;
-    this->unk1[24] = 24;
-    this->unk1[25] = 25;
-    this->unk1[26] = 26;
-    this->unk1[27] = 27;
-    this->unk1[28] = 28;
-    this->unk1[29] = 29;
-    this->unk1[30] = 30;
-    this->unk1[31] = 31;
-    this->unk1[32] = 32;
-    this->unk1[33] = 33;
-    this->unk1[34] = 34;
-    this->unk1[35] = 35;
-    this->unk1[36] = 36;
-    this->unk1[37] = 37;
-    this->unk1[38] = 38;
-    this->unk1[39] = 39;
-    this->unk1[40] = 40;
-    this->unk1[41] = 41;
-    this->unk1[42] = 42;
-    this->unk1[43] = 43;
-    this->unk1[44] = 44;
-    this->unk1[45] = 45;
-    this->unk1[46] = 46;
-    this->unk1[47] = 47;
-    this->unk1[48] = 48;
-    this->unk1[49] = 49;
-    this->unk1[50] = 50;
-    this->unk1[51] = 51;
-    this->unk1[52] = 52;
-    this->unk1[53] = 53;
-    this->unk1[54] = 54;
-    this->unk1[55] = 55;
-    this->unk1[56] = 56;
-    this->unk1[57] = 57;
-    this->unk1[58] = 58;
-    this->unk1[59] = 59;
-    this->unk1[60] = 60;
-    this->unk1[61] = 61;
-    this->unk1[62] = 62;
-    this->unk1[63] = 63;
-    this->unk1[64] = 64;
-    this->unk1[65] = 65;
-    this->unk1[66] = 66;
-    this->unk1[67] = 67;
-    this->unk1[68] = 68;
-    this->unk1[69] = 69;
-    this->unk1[70] = 70;
-    this->unk1[71] = 71;
-    this->unk1[72] = 72;
-    this->unk1[73] = 73;
-    this->unk1[74] = 74;
-    this->unk1[75] = 75;
-    this->unk1[76] = 76;
-    this->unk1[77] = 77;
-    this->unk1[78] = 78;
-    this->unk1[79] = 79;
-    this->unk1[80] = 80;
-    this->unk1[81] = 81;
-    this->unk1[82] = 82;
-    this->unk1[83] = 83;
-    this->unk1[84] = 87;
-    this->unk1[85] = 88;
-    this->unk1[86] = 156;
-    this->unk1[87] = 157;
-    this->unk1[88] = 181;
-    this->unk1[89] = 183;
-    this->unk1[90] = 184;
-    this->unk1[91] = 199;
-    this->unk1[92] = 200;
-    this->unk1[93] = 201;
-    this->unk1[94] = 203;
-    this->unk1[95] = 205;
-    this->unk1[96] = 207;
-    this->unk1[97] = 208;
-    this->unk1[98] = 209;
-    this->unk1[99] = 210;
-    this->unk1[100] = 211;
-    this->unk1[101] = 219;
-    this->unk1[102] = 220;
-    this->unk1[103] = 221;
+    this->key_to_scancode[1] = 1;
+    this->key_to_scancode[2] = 2;
+    this->key_to_scancode[3] = 3;
+    this->key_to_scancode[4] = 4;
+    this->key_to_scancode[5] = 5;
+    this->key_to_scancode[6] = 6;
+    this->key_to_scancode[7] = 7;
+    this->key_to_scancode[8] = 8;
+    this->key_to_scancode[9] = 9;
+    this->key_to_scancode[10] = 10;
+    this->key_to_scancode[11] = 11;
+    this->key_to_scancode[12] = 12;
+    this->key_to_scancode[13] = 13;
+    this->key_to_scancode[14] = 14;
+    this->key_to_scancode[15] = 15;
+    this->key_to_scancode[16] = 16;
+    this->key_to_scancode[17] = 17;
+    this->key_to_scancode[18] = 18;
+    this->key_to_scancode[19] = 19;
+    this->key_to_scancode[20] = 20;
+    this->key_to_scancode[21] = 21;
+    this->key_to_scancode[22] = 22;
+    this->key_to_scancode[23] = 23;
+    this->key_to_scancode[24] = 24;
+    this->key_to_scancode[25] = 25;
+    this->key_to_scancode[26] = 26;
+    this->key_to_scancode[27] = 27;
+    this->key_to_scancode[28] = 28;
+    this->key_to_scancode[29] = 29;
+    this->key_to_scancode[30] = 30;
+    this->key_to_scancode[31] = 31;
+    this->key_to_scancode[32] = 32;
+    this->key_to_scancode[33] = 33;
+    this->key_to_scancode[34] = 34;
+    this->key_to_scancode[35] = 35;
+    this->key_to_scancode[36] = 36;
+    this->key_to_scancode[37] = 37;
+    this->key_to_scancode[38] = 38;
+    this->key_to_scancode[39] = 39;
+    this->key_to_scancode[40] = 40;
+    this->key_to_scancode[41] = 41;
+    this->key_to_scancode[42] = 42;
+    this->key_to_scancode[43] = 43;
+    this->key_to_scancode[44] = 44;
+    this->key_to_scancode[45] = 45;
+    this->key_to_scancode[46] = 46;
+    this->key_to_scancode[47] = 47;
+    this->key_to_scancode[48] = 48;
+    this->key_to_scancode[49] = 49;
+    this->key_to_scancode[50] = 50;
+    this->key_to_scancode[51] = 51;
+    this->key_to_scancode[52] = 52;
+    this->key_to_scancode[53] = 53;
+    this->key_to_scancode[54] = 54;
+    this->key_to_scancode[55] = 55;
+    this->key_to_scancode[56] = 56;
+    this->key_to_scancode[57] = 57;
+    this->key_to_scancode[58] = 58;
+    this->key_to_scancode[59] = 59;
+    this->key_to_scancode[60] = 60;
+    this->key_to_scancode[61] = 61;
+    this->key_to_scancode[62] = 62;
+    this->key_to_scancode[63] = 63;
+    this->key_to_scancode[64] = 64;
+    this->key_to_scancode[65] = 65;
+    this->key_to_scancode[66] = 66;
+    this->key_to_scancode[67] = 67;
+    this->key_to_scancode[68] = 68;
+    this->key_to_scancode[69] = 69;
+    this->key_to_scancode[70] = 70;
+    this->key_to_scancode[71] = 71;
+    this->key_to_scancode[72] = 72;
+    this->key_to_scancode[73] = 73;
+    this->key_to_scancode[74] = 74;
+    this->key_to_scancode[75] = 75;
+    this->key_to_scancode[76] = 76;
+    this->key_to_scancode[77] = 77;
+    this->key_to_scancode[78] = 78;
+    this->key_to_scancode[79] = 79;
+    this->key_to_scancode[80] = 80;
+    this->key_to_scancode[81] = 81;
+    this->key_to_scancode[82] = 82;
+    this->key_to_scancode[83] = 83;
+    this->key_to_scancode[84] = 87;
+    this->key_to_scancode[85] = 88;
+    this->key_to_scancode[86] = 156;
+    this->key_to_scancode[87] = 157;
+    this->key_to_scancode[88] = 181;
+    this->key_to_scancode[89] = 183;
+    this->key_to_scancode[90] = 184;
+    this->key_to_scancode[91] = 199;
+    this->key_to_scancode[92] = 200;
+    this->key_to_scancode[93] = 201;
+    this->key_to_scancode[94] = 203;
+    this->key_to_scancode[95] = 205;
+    this->key_to_scancode[96] = 207;
+    this->key_to_scancode[97] = 208;
+    this->key_to_scancode[98] = 209;
+    this->key_to_scancode[99] = 210;
+    this->key_to_scancode[100] = 211;
+    this->key_to_scancode[101] = 219;
+    this->key_to_scancode[102] = 220;
+    this->key_to_scancode[103] = 221;
 
     for (i = 0; i < 104; ++i)
-        this->unk2[this->unk1[i]] = i;
+        this->scancode_to_key[this->key_to_scancode[i]] = i;
 
+    return 0;
+}
+
+// FUNCTION: REDLINE 0x0043C98E
+void UnbindAllKeybinds() {
+    g_Keybinds->UnbindAll();
+}
+
+// FUNCTION: REDLINE 0x004995BC
+void Keybinds::UnbindAll() {
+    for (int i = 0; i < 281; ++i)
+        this->Unbind(i);
+}
+
+// FUNCTION: REDLINE 0x00498529
+int Keybinds::Unbind(int key) {
+    int act = this->key_map[key];
+    if (act == -1) return 0;
+
+    for (int i = 0; i < 4; ++i) {
+        if (this->action_map[act][i] == key) {
+            this->action_map[act][i] = 0;
+            break;
+        }
+    }
+    this->key_map[key] = -1;
+    return 0;
+}
+
+// FUNCTION: REDLINE 0x0043C99E
+void UnbindAction(int action) {
+    g_Keybinds->UnbindAction(action);
+}
+
+// FUNCTION: REDLINE 0x004985AE
+void Keybinds::UnbindAction(int action) {
+    if (this->InvalidActionIndex(action)) return;
+    for (int i = 0; i < 4; ++i) {
+        if (this->action_map[action][i] != 0) {
+            this->key_map[this->action_map[action][i]] = -1;
+            this->action_map[action][i] = 0;
+        }
+    }
+}
+
+// FUNCTION: REDLINE 0x0049828A
+int Keybinds::Bind(int key, int action) {
+    if (this->InvalidActionIndex(action)) return 1;
+    for (int i = 0; i < 4; ++i) {
+        if (this->action_map[action][i] == key)
+            return 0;
+    }
+
+    int j = 0;
+    while (j < 4 && this->action_map[action][j] != 0) {
+        j++;
+    }
+    int k;
+    if (j == 4) {
+        for (k = 0; k < 3; ++k)
+            this->action_map[action][k + 1] = this->action_map[action][k];
+        this->key_map[this->action_map[action][0]] = -1;
+        this->action_map[action][0] = 0;
+        j = 0;
+    }
+    if (this->key_map[key] != -1) {
+        for (k = 0; k < 4; ++k) {
+            if (this->action_map[this->key_map[key]][k] == key) {
+                this->action_map[this->key_map[key]][k] = 0;
+                break;
+            }
+        }
+        this->key_map[key] = -1;
+    }
+    this->key_map[key] = action;
+    this->action_map[action][j] = key;
     return 0;
 }
 

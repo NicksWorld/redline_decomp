@@ -1,23 +1,25 @@
 #pragma once
 
+
 union ValueInner {
     int integer;
     float decimal;
     char* string;
+    bool boolean;
 };
 
 enum ValueTag {
     VALUE_SIGNED = 0,
     VALUE_FLOAT = 1,
     VALUE_STRING = 2,
-    VALUE_UNSIGNED = 3,
-    VALUE_BOOL = 4,
+    VALUE_INTBOOL = 3,
+    VALUE_CHARBOOL = 4,
 };
 
 // Linked list node!
 class Value {
     public:
-    char line[32];
+    char name[32];
     ValueInner value;
     int kind; // union tag
     Value* next;
@@ -25,6 +27,15 @@ class Value {
     Value();
     ~Value();
 };
+
+struct DefaultConfValue {
+    char name[128];
+    void *value;
+    int kind;
+};
+
+extern DefaultConfValue g_ConfDefault[73];
+extern DefaultConfValue g_ConfDefaultDebug[20];
 
 class Config {
     Value** conf_values;
@@ -51,12 +62,25 @@ class Config {
     Config();
     void ResetBinds();
     void ClearConfValues();
+
     void LoadPreset(int mode);
+
     void Default();
     void DefaultConf();
+
     int Load();
+
+    int ApplyKeybinds(bool car);
+
     int ParseLine(char* line);
     int ParseMapping(char* mapping);
     int ParseOther(char* line);
+
+    Value* GetValue(const char* name);
     int StoreValue(Value* v);
+
+    int GetIntValue(const char* name, int* out);
+    int GetFloatValue(const char* name, float* out);
+    int GetStringValue(const char* name, char* out);
+    int GetBoolValue(const char* name, bool* out);
 };

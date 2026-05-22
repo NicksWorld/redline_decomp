@@ -77,7 +77,7 @@ bool EngineState::SetupStates() {
     }
     this->states[STATE_NONE]->tick = StateImpl::None::Tick;
     this->states[STATE_NONE]->unk = StateImpl::None::Unk;
-    this->states[STATE_NONE]->init = InitStub;
+    this->states[STATE_NONE]->init = StateImpl::None::Init;
     this->states[STATE_NONE]->shutdown = StateImpl::None::Shutdown;
     this->states[STATE_NONE]->flag = true;
 

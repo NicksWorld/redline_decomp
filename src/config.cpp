@@ -9,6 +9,8 @@
 #include "keybinds.h"
 #include "log.h"
 
+Config *g_Config;
+
 // FUNCTION: REDLINE 0x0043d46b
 Config::Config() {
     this->conf_size = 256;
@@ -70,7 +72,7 @@ int Config::ParseMapping(char *mapping) {
     if (*mapping == NULL)
         return -1;
 
-    if (mapping[0] == 'c' && mapping[1] == 'a' && mapping[3] == 'r') {
+    if (mapping[0] == 'c' && mapping[1] == 'a' && mapping[2] == 'r') {
         mapping += 3;
         car = true;
         while (isspace(*mapping) && *mapping != NULL)
@@ -151,7 +153,7 @@ int Config::ParseMapping(char *mapping) {
 
 // FUNCTION: REDLINE 0x0043d3a0
 Value::Value() {
-    this->line[0] = 0;
+    this->name[0] = 0;
     this->next = NULL;
     this->value.string = NULL;
     this->kind = -1;
@@ -170,11 +172,30 @@ Value::~Value() {
     }
 }
 
+// FUNCTION: REDLINE 0x00440C9E
+Value *Config::GetValue(const char *name) {
+    char lower[64];
+    if (name == NULL)
+        return NULL;
+    strcpy(lower, name);
+    strlwr(lower);
+
+    int key = *lower;
+    Value *v = this->conf_values[key];
+    while (v != NULL) {
+        if (!strcmp(lower, v->name))
+            break;
+        v = v->next;
+    }
+
+    return v;
+}
+
 // FUNCTION: REDLINE 0x00440c42
 int Config::StoreValue(Value *v) {
     if (v == NULL)
         return -1;
-    int i = v->line[0];
+    int i = v->name[0];
     Value *prev_head = this->conf_values[i];
     if (prev_head != NULL)
         v->next = prev_head;
@@ -184,9 +205,56 @@ int Config::StoreValue(Value *v) {
     return 0;
 }
 
+// FUNCTION: REDLINE 0x0043F3B0
+int Config::GetIntValue(const char *name, int *out) {
+    Value *v = this->GetValue(name);
+    if (!v)
+        return -1;
+    if (v->kind != VALUE_SIGNED && v->kind != VALUE_INTBOOL &&
+        v->kind != VALUE_CHARBOOL)
+        return -1;
+    *out = v->value.integer;
+    return 0;
+}
+
+// FUNCTION: REDLINE 0x0043F36C
+int Config::GetFloatValue(const char *name, float *out) {
+    Value *v = this->GetValue(name);
+    if (!v)
+        return -1;
+    if (v->kind != VALUE_FLOAT)
+        return -1;
+    *out = v->value.decimal;
+    return 0;
+}
+
+// FUNCTION: REDLINE 0x0043F315
+int Config::GetStringValue(const char *name, char *out) {
+    if (out == NULL)
+        return -1;
+    Value *v = this->GetValue(name);
+    if (!v)
+        return -1;
+    if (v->kind != VALUE_STRING)
+        return -1;
+    strcpy(out, v->value.string);
+    return 0;
+}
+
+// FUNCTION: REDLINE 0x0043F406
+int Config::GetBoolValue(const char *name, bool *out) {
+    Value *v = this->GetValue(name);
+    if (!v)
+        return -1;
+    if (v->kind != VALUE_SIGNED && v->kind != VALUE_INTBOOL &&
+        v->kind != VALUE_CHARBOOL)
+        return -1;
+    *out = v->value.integer != 0; // TODO: This doesn't perfectly match
+    return 0;
+}
+
 // FUNCTION: REDLINE 0x004408BD
 int Config::ParseOther(char *line) {
-    // TODO: free is unlikely to be the real call on line_copy
     int integer;
     float decimal;
 
@@ -225,7 +293,7 @@ int Config::ParseOther(char *line) {
         char *after_dot = strstr(line_end, ".");
         after_dot++;
         unk2 = strstr(line_end, ".");
-        if (unk2 != NULL) {
+        if (unk2 == NULL) {
             decimal = (float)atof(line_end);
             if (decimal != 0.0) {
                 kind = 1;
@@ -250,10 +318,10 @@ int Config::ParseOther(char *line) {
 
     // int v19 = -1;
     if (strlen(sep) >= 32) {
-        strncpy(v->line, sep, 30);
-        v->line[31] = 0;
+        strncpy(v->name, sep, 30);
+        v->name[31] = 0;
     } else {
-        strcpy(v->line, sep);
+        strcpy(v->name, sep);
     }
     // TODO: switch
     int len;
@@ -530,134 +598,316 @@ void Config::ClearConfValues() {
     }
 }
 
-struct DefaultConfValue {
-    char name[128];
-    void *value;
-    int kind;
+#define GLOBAL_STRING_SIZE 128
+
+// GLOBAL: REDLINE 0x005CE638
+int g_D3DSound;
+// GLOBAL: REDLINE 0x005CE654
+float g_Mouse_Foot;
+// GLOBAL: REDLINE 0x005CE658
+float g_Mouse_Car;
+// GLOBAL: REDLINE 0x005CE608
+int g_FreeLook;
+// GLOBAL: REDLINE 0x005CE60C
+int g_CarFreeLook;
+// GLOBAL: REDLINE 0x005CE610
+int g_ReverseYAxis;
+// GLOBAL: REDLINE 0x005CE614
+int g_ReverseYAxisCar;
+// GLOBAL: REDLINE 0x005CE88C
+int g_ScreenWidth;
+// GLOBAL: REDLINE 0x005CE890
+int g_ScreenHeight;
+// GLOBAL: REDLINE 0x005CE894
+int g_ScreenBPP;
+// GLOBAL: REDLINE 0x005CE898
+float g_ScreenGamma;
+// GLOBAL: REDLINE 0x005CE8F0
+int g_MipMapping;
+// GLOBAL: REDLINE 0x005CE640
+int g_DrawShadows;
+// GLOBAL: REDLINE 0x005CE89C
+int g_DisplayParticles;
+// GLOBAL: REDLINE 0x005CE8A0
+int g_DisplayTireTreads;
+// GLOBAL: REDLINE 0x005CE8A4
+int g_DisplayScreenFlash;
+// GLOBAL: REDLINE 0x005CE8A8
+int g_DifficultyLevel;
+// GLOBAL: REDLINE 0x005CE8AC
+int g_EnableFog;
+// GLOBAL: REDLINE 0x005CE8B0
+int g_EnviroMapping;
+// GLOBAL: REDLINE 0x005CE8B4
+int g_GroundLighting;
+// GLOBAL: REDLINE 0x005CE8B8
+int g_PalettedTextures;
+// GLOBAL: REDLINE 0x005CE8C4
+int g_TextureDetail;
+// GLOBAL: REDLINE 0x005CE8BC
+int g_TripleBuffer;
+// GLOBAL: REDLINE 0x005CE8C0
+int g_LimitParticleSize;
+// GLOBAL: REDLINE 0x005CE8C8
+int g_DXtextureManager;
+// GLOBAL: REDLINE 0x005CE8CC
+int g_DitherEnable;
+// GLOBAL: REDLINE 0x005CE8D0
+int g_WeaponDisplayMin;
+// GLOBAL: REDLINE 0x005CE8D4
+int g_PersonGunDraw;
+// GLOBAL: REDLINE 0x005CE8D8
+int g_carDashboardDraw;
+// GLOBAL: REDLINE 0x005CE8DC
+int g_turretDashboardDraw;
+// GLOBAL: REDLINE 0x005CE8E0
+int g_carCamMode;
+// GLOBAL: REDLINE 0x005CE8E4
+int g_turretCamMode;
+// GLOBAL: REDLINE 0x005CE8EC
+int g_turretFollowCamMode;
+// GLOBAL: REDLINE 0x005CE8E8
+int g_carFollowCamMode;
+// GLOBAL: REDLINE 0x005CE64C
+int g_mouseWheel;
+// GLOBAL: REDLINE 0x005CE648
+int g_carMouseWheel;
+// GLOBAL: REDLINE 0x005CE664
+int g_carSteerInc;
+// GLOBAL: REDLINE 0x005CE668
+int g_carSteerMax;
+// GLOBAL: REDLINE 0x005CE65C
+int g_footSteerInc;
+// GLOBAL: REDLINE 0x005CE660
+int g_footSteerMax;
+// GLOBAL: REDLINE 0x005CE8F4
+int g_soundChannels;
+// GLOBAL: REDLINE 0x005CE650
+int g_cruiseControl;
+// GLOBAL: REDLINE 0x005CE674
+char g_LastMap[GLOBAL_STRING_SIZE];
+// GLOBAL: REDLINE 0x005CE78C
+char g_DisplayDevice[GLOBAL_STRING_SIZE];
+// GLOBAL: REDLINE 0x005CE80C
+char g_DeviceDriver[GLOBAL_STRING_SIZE];
+// GLOBAL: REDLINE 0x005CE9C6
+char g_Net_GameName[GLOBAL_STRING_SIZE];
+// GLOBAL: REDLINE 0x005CE91A
+bool g_Net_Mode_ScoreLimitOn;
+// GLOBAL: REDLINE 0x005CE920
+int g_Net_Mode_ScoreLimit;
+// GLOBAL: REDLINE 0x005CE919
+bool g_Net_Mode_TimeLimitOn;
+// GLOBAL: REDLINE 0x005CE91C
+int g_Net_Mode_TimeLimit;
+// GLOBAL: REDLINE 0x005CE918
+bool g_Net_SmartCrosshair;
+// GLOBAL: REDLINE 0x005CE90B
+bool g_Net_Teams;
+// GLOBAL: REDLINE 0x005CE90E
+bool g_Net_FriendlyFire;
+// GLOBAL: REDLINE 0x005CE90C
+bool g_Net_TeamPlace;
+// GLOBAL: REDLINE 0x005CE908
+bool g_Net_Mode_CTF;
+// GLOBAL: REDLINE 0x005CE909
+bool g_Net_Mode_CTF_FlagDrop;
+// GLOBAL: REDLINE 0x005CE90A
+bool g_Net_Mode_CTF_Adv;
+// GLOBAL: REDLINE 0x005CE946
+char g_Net_LastIP[GLOBAL_STRING_SIZE];
+// GLOBAL: REDLINE 0x005CE910
+int g_Net_PlayerTeam;
+// GLOBAL: REDLINE 0x005CE914
+int g_Net_PlayerSkel;
+// GLOBAL: REDLINE 0x005CE928
+int g_Net_MaxPlayers;
+// GLOBAL: REDLINE 0x005CE8F9
+bool g_Net_ConsoleTCP;
+// GLOBAL: REDLINE 0x005CEAC8
+float g_Joystick_UpDown;
+// GLOBAL: REDLINE 0x005CEACC
+float g_Joystick_LeftRight;
+// GLOBAL: REDLINE 0x005CEAD8
+int g_Joystick_FreeLook;
+// GLOBAL: REDLINE 0x005CEAE4
+float g_Master_Volume;
+// GLOBAL: REDLINE 0x005CEAD0
+float g_CarJoystick_UpDown;
+// GLOBAL: REDLINE 0x005CEAD4
+float g_CarJoystick_LeftRight;
+// GLOBAL: REDLINE 0x005CEADC
+int g_Joystick_DeadZoneX;
+// GLOBAL: REDLINE 0x005CEAE0
+int g_Joystick_DeadZoneY;
+// GLOBAL: REDLINE 0x005CEAE8
+bool g_CDAudio_Active;
+// GLOBAL: REDLINE 0x005CEAE9
+bool g_IntroVideo;
+
+// GLOBAL: REDLINE 0x005985e8
+DefaultConfValue g_ConfDefault[73] = {
+    {"D3DSound", &g_D3DSound, VALUE_INTBOOL},
+    {"Mouse_Foot", &g_Mouse_Foot, VALUE_FLOAT},
+    {"Mouse_Car", &g_Mouse_Car, VALUE_FLOAT},
+    {"FreeLook", &g_FreeLook, VALUE_INTBOOL},
+    {"CarFreeLook", &g_CarFreeLook, VALUE_INTBOOL},
+    {"ReverseYAxis", &g_ReverseYAxis, VALUE_INTBOOL},
+    {"ReverseYAxisCar", &g_ReverseYAxisCar, VALUE_INTBOOL},
+    {"ScreenWidth", &g_ScreenWidth, VALUE_SIGNED},
+    {"ScreenHeight", &g_ScreenHeight, VALUE_SIGNED},
+    {"ScreenBPP", &g_ScreenBPP, VALUE_SIGNED},
+    {"ScreenGamma", &g_ScreenGamma, VALUE_FLOAT},
+    {"MipMapping", &g_MipMapping, VALUE_SIGNED},
+    {"DrawShadows", &g_DrawShadows, VALUE_INTBOOL},
+    {"DisplayParticles", &g_DisplayParticles, VALUE_SIGNED},
+    {"DisplayTireTreads", &g_DisplayTireTreads, VALUE_INTBOOL},
+    {"DisplayScreenFlash", &g_DisplayScreenFlash, VALUE_INTBOOL},
+    {"DifficultyLevel", &g_DifficultyLevel, VALUE_SIGNED},
+    {"EnableFog", &g_EnableFog, VALUE_INTBOOL},
+    {"EnviroMapping", &g_EnviroMapping, VALUE_INTBOOL},
+    {"GroundLighting", &g_GroundLighting, VALUE_INTBOOL},
+    {"PalettedTextures", &g_PalettedTextures, VALUE_INTBOOL},
+    {"TextureDetail", &g_TextureDetail, VALUE_SIGNED},
+    {"TripleBuffer", &g_TripleBuffer, VALUE_INTBOOL},
+    {"LimitParticleSize", &g_LimitParticleSize, VALUE_INTBOOL},
+    {"DXtextureManager", &g_DXtextureManager, VALUE_INTBOOL},
+    {"DitherEnable", &g_DitherEnable, VALUE_INTBOOL},
+    {"WeaponDisplayMin", &g_WeaponDisplayMin, VALUE_INTBOOL},
+    {"PersonGunDraw", &g_PersonGunDraw, VALUE_INTBOOL},
+    {"carDashboardDraw", &g_carDashboardDraw, VALUE_INTBOOL},
+    {"turretDashboardDraw", &g_turretDashboardDraw, VALUE_SIGNED},
+    {"carCamMode", &g_carCamMode, VALUE_SIGNED},
+    {"turretCamMode", &g_turretCamMode, VALUE_SIGNED},
+    {"turretFollowCamMode", &g_turretFollowCamMode, VALUE_SIGNED},
+    {"carFollowCamMode", &g_carFollowCamMode, VALUE_SIGNED},
+    {"mouseWheel", &g_mouseWheel, VALUE_SIGNED},
+    {"carMouseWheel", &g_carMouseWheel, VALUE_SIGNED},
+    {"carSteerInc", &g_carSteerInc, VALUE_SIGNED},
+    {"carSteerMax", &g_carSteerMax, VALUE_SIGNED},
+    {"footSteerInc", &g_footSteerInc, VALUE_SIGNED},
+    {"footSteerMax", &g_footSteerMax, VALUE_SIGNED},
+    {"soundChannels", &g_soundChannels, VALUE_SIGNED},
+    {"cruiseControl", &g_cruiseControl, VALUE_SIGNED},
+    {"LastMap", g_LastMap, VALUE_STRING},
+    {"DisplayDevice", g_DisplayDevice, VALUE_STRING},
+    {"DeviceDriver", g_DeviceDriver, VALUE_STRING},
+    {"Net_GameName", g_Net_GameName, VALUE_STRING},
+    {"Net_Mode_ScoreLimitOn", &g_Net_Mode_ScoreLimitOn, VALUE_CHARBOOL},
+    {"Net_Mode_ScoreLimit", &g_Net_Mode_ScoreLimit, VALUE_SIGNED},
+    {"Net_Mode_TimeLimitOn", &g_Net_Mode_TimeLimitOn, VALUE_CHARBOOL},
+    {"Net_Mode_TimeLimit", &g_Net_Mode_TimeLimit, VALUE_SIGNED},
+    {"Net_SmartCrosshair", &g_Net_SmartCrosshair, VALUE_CHARBOOL},
+    {"Net_Teams", &g_Net_Teams, VALUE_CHARBOOL},
+    {"Net_FriendlyFire", &g_Net_FriendlyFire, VALUE_CHARBOOL},
+    {"Net_TeamPlace", &g_Net_TeamPlace, VALUE_CHARBOOL},
+    {"Net_Mode_CTF", &g_Net_Mode_CTF, VALUE_CHARBOOL},
+    {"Net_Mode_CTF_FlagDrop", &g_Net_Mode_CTF_FlagDrop, VALUE_CHARBOOL},
+    {"Net_Mode_CTF_Adv", &g_Net_Mode_CTF_Adv, VALUE_CHARBOOL},
+    {"Net_LastIP", g_Net_LastIP, VALUE_STRING},
+    {"Net_PlayerTeam", &g_Net_PlayerTeam, VALUE_SIGNED},
+    {"Net_PlayerSkel", &g_Net_PlayerSkel, VALUE_SIGNED},
+    {"Net_MaxPlayers", &g_Net_MaxPlayers, VALUE_SIGNED},
+    {"Net_ConsoleTCP", &g_Net_ConsoleTCP, VALUE_CHARBOOL},
+    {"Joystick_UpDown", &g_Joystick_UpDown, VALUE_FLOAT},
+    {"Joystick_LeftRight", &g_Joystick_LeftRight, VALUE_FLOAT},
+    {"Joystick_FreeLook", &g_Joystick_FreeLook, VALUE_INTBOOL},
+    {"Master_Volume", &g_Master_Volume, VALUE_FLOAT},
+    {"CarJoystick_UpDown", &g_CarJoystick_UpDown, VALUE_FLOAT},
+    {"CarJoystick_LeftRight", &g_CarJoystick_LeftRight, VALUE_FLOAT},
+    {"Joystick_DeadZoneX", &g_Joystick_DeadZoneX, VALUE_SIGNED},
+    {"Joystick_DeadZoneY", &g_Joystick_DeadZoneY, VALUE_SIGNED},
+    {"CDAudio_Active", &g_CDAudio_Active, VALUE_CHARBOOL},
+    {"IntroVideo", &g_IntroVideo, VALUE_CHARBOOL},
+    {"", 0, 0},
 };
 
-// TODO: Second value needs to be a pointer to the respective global.
-// This may take a long while
-// GLOBAL: REDLINE 0x005985e8
-DefaultConfValue g_DefaultConf[] = {
-    {"D3DSound", 0, VALUE_UNSIGNED},
-    {"Mouse_Foot", 0, VALUE_FLOAT},
-    {"Mouse_Car", 0, VALUE_FLOAT},
-    {"FreeLook", 0, VALUE_UNSIGNED},
-    {"CarFreeLook", 0, VALUE_UNSIGNED},
-    {"ReverseYAxis", 0, VALUE_UNSIGNED},
-    {"ReverseYAxisCar", 0, VALUE_UNSIGNED},
-    {"ScreenWidth", 0, VALUE_SIGNED},
-    {"ScreenHeight", 0, VALUE_SIGNED},
-    {"ScreenBPP", 0, VALUE_SIGNED},
-    {"ScreenGamma", 0, VALUE_SIGNED},
-    {"MipMapping", 0, VALUE_SIGNED},
-    {"DrawShadows", 0, VALUE_UNSIGNED},
-    {"DisplayParticles", 0, VALUE_SIGNED},
-    {"DisplayTireTreads", 0, VALUE_UNSIGNED},
-    {"DisplayScreenFlash", 0, VALUE_UNSIGNED},
-    {"DifficultyLevel", 0, VALUE_SIGNED},
-    {"EnableFog", 0, VALUE_UNSIGNED},
-    {"EnviroMapping", 0, VALUE_UNSIGNED},
-    {"GroundLighting", 0, VALUE_UNSIGNED},
-    {"PalettedTextures", 0, VALUE_UNSIGNED},
-    {"TextureDetail", 0, VALUE_SIGNED},
-    {"TripleBuffer", 0, VALUE_UNSIGNED},
-    {"LimitParticleSize", 0, VALUE_UNSIGNED},
-    {"DXtextureManager", 0, VALUE_UNSIGNED},
-    {"DitherEnable", 0, VALUE_UNSIGNED},
-    {"WeaponDisplayMin", 0, VALUE_UNSIGNED},
-    {"PersonGunDraw", 0, VALUE_UNSIGNED},
-    {"carDashboardDraw", 0, VALUE_UNSIGNED},
-    {"turretDashboardDraw", 0, VALUE_SIGNED},
-    {"carCamMode", 0, VALUE_SIGNED},
-    {"turretCamMode", 0, VALUE_SIGNED},
-    {"turretFollowCamMode", 0, VALUE_SIGNED},
-    {"carFollowCamMode", 0, VALUE_SIGNED},
-    {"mouseWheel", 0, VALUE_SIGNED},
-    {"carMouseWheel", 0, VALUE_SIGNED},
-    {"carSteerInc", 0, VALUE_SIGNED},
-    {"carSteerMax", 0, VALUE_SIGNED},
-    {"footSteerInc", 0, VALUE_SIGNED},
-    {"footSteerMax", 0, VALUE_SIGNED},
-    {"soundChannels", 0, VALUE_SIGNED},
-    {"cruiseControl", 0, VALUE_SIGNED},
-    {"LastMap", 0, VALUE_STRING},
-    {"DisplayDevice", 0, VALUE_STRING},
-    {"DeviceDriver", 0, VALUE_STRING},
-    {"Net_GameName", 0, VALUE_STRING},
-    {"Net_Mode_ScoreLimitOn", 0, VALUE_BOOL},
-    {"Net_Mode_ScoreLimit", 0, VALUE_SIGNED},
-    {"Net_Mode_TimeLimitOn", 0, VALUE_BOOL},
-    {"Net_Mode_TimeLimit", 0, VALUE_SIGNED},
-    {"Net_SmartCrosshair", 0, VALUE_BOOL},
-    {"Net_Teams", 0, VALUE_BOOL},
-    {"Net_FriendlyFire", 0, VALUE_BOOL},
-    {"Net_TeamPlace", 0, VALUE_BOOL},
-    {"Net_Mode_CTF", 0, VALUE_BOOL},
-    {"Net_Mode_CTF_FlagDrop", 0, VALUE_BOOL},
-    {"Net_Mode_CTF_Adv", 0, VALUE_BOOL},
-    {"Net_LastIP", 0, VALUE_STRING},
-    {"Net_PlayerTeam", 0, VALUE_SIGNED},
-    {"Net_PlayerSkel", 0, VALUE_SIGNED},
-    {"Net_MaxPlayers", 0, VALUE_SIGNED},
-    {"Net_ConsoleTCP", 0, VALUE_BOOL},
-    {"Joystick_UpDown", 0, VALUE_FLOAT},
-    {"Joystick_LeftRight", 0, VALUE_FLOAT},
-    {"Joystick_FreeLook", 0, VALUE_UNSIGNED},
-    {"Master_Volume", 0, VALUE_FLOAT},
-    {"CarJoystick_UpDown", 0, VALUE_FLOAT},
-    {"CarJoystick_LeftRight", 0, VALUE_FLOAT},
-    {"Joystick_DeadZoneX", 0, VALUE_SIGNED},
-    {"Joystick_DeadZoneY", 0, VALUE_SIGNED},
-    {"CDAudio_Active", 0, VALUE_BOOL},
-    {"IntroVideo", 0, VALUE_BOOL},
-    // Debug/Inaccessible?
-    {"", 0, VALUE_SIGNED},
-    {"DebugMouse", 0, VALUE_UNSIGNED},
-    {"DebugFrames", 0, VALUE_UNSIGNED},
-    {"NumFrames", 0, VALUE_SIGNED},
-    {"PlayDemo", 0, VALUE_UNSIGNED},
-    {"RecordDemo", 0, VALUE_UNSIGNED},
-    {"Windowed", 0, VALUE_UNSIGNED},
-    {"AIActive", 0, VALUE_UNSIGNED},
-    {"QuickRun", 0, VALUE_UNSIGNED},
-    {"CreateUseFile", 0, VALUE_UNSIGNED},
-    {"replayRecord", 0, VALUE_SIGNED},
-    {"replayPlay", 0, VALUE_SIGNED},
-    {"Net_Perf_CliSendFrames", 0, VALUE_SIGNED},
-    {"Net_Perf_ServSendFrames", 0, VALUE_SIGNED},
-    {"Net_Perf_CliInterp", 0, VALUE_BOOL},
-    {"Net_Perf_CliPredict", 0, VALUE_BOOL},
-    {"Net_Perf_ExtraLatencyOn", 0, VALUE_BOOL},
-    {"Net_Perf_ExtraLatency", 0, VALUE_SIGNED},
-    {"Net_FastStart", 0, VALUE_BOOL},
-    {"Net_FastHost", 0, VALUE_BOOL},
+// GLOBAL: REDLINE 0x005CE604
+int g_DebugMouse;
+// GLOBAL: REDLINE 0x005CE618
+int g_DebugFrames;
+// GLOBAL: REDLINE 0x005CE66C
+int g_NumFrames;
+// GLOBAL: REDLINE 0x005CE61C
+int g_PlayDemo;
+// GLOBAL: REDLINE 0x005CE624
+int g_RecordDemo;
+// GLOBAL: REDLINE 0x005CE630
+int g_Windowed;
+// GLOBAL: REDLINE 0x005CE634
+int g_AIActive;
+// GLOBAL: REDLINE 0x005CE63C
+int g_QuickRun;
+// GLOBAL: REDLINE 0x005CE644
+int g_CreateUseFile;
+// GLOBAL: REDLINE 0x005CE628
+int g_replayRecord;
+// GLOBAL: REDLINE 0x005CE62C
+int g_replayPlay;
+// GLOBAL: REDLINE 0x005CE930
+int g_Net_Perf_CliSendFrames;
+// GLOBAL: REDLINE 0x005CE934
+int g_Net_Perf_ServSendFrames;
+// GLOBAL: REDLINE 0x005CE938
+bool g_Net_Perf_CliInterp;
+// GLOBAL: REDLINE 0x005CE939
+bool g_Net_Perf_CliPredict;
+// GLOBAL: REDLINE 0x005CE93D
+bool g_Net_Perf_ExtraLatencyOn;
+// GLOBAL: REDLINE 0x005CE940
+int g_Net_Perf_ExtraLatency;
+// GLOBAL: REDLINE 0x005CE8FA
+bool g_Net_FastStart;
+// GLOBAL: REDLINE 0x005CE8FB
+bool g_Net_FastHost;
+
+// Debug/Inaccessible?
+DefaultConfValue g_ConfDefaultDebug[20] = {
+    {"DebugMouse", &g_DebugMouse, VALUE_INTBOOL},
+    {"DebugFrames", &g_DebugFrames, VALUE_INTBOOL},
+    {"NumFrames", &g_NumFrames, VALUE_SIGNED},
+    {"PlayDemo", &g_PlayDemo, VALUE_INTBOOL},
+    {"RecordDemo", &g_RecordDemo, VALUE_INTBOOL},
+    {"Windowed", &g_Windowed, VALUE_INTBOOL},
+    {"AIActive", &g_AIActive, VALUE_INTBOOL},
+    {"QuickRun", &g_QuickRun, VALUE_INTBOOL},
+    {"CreateUseFile", &g_CreateUseFile, VALUE_INTBOOL},
+    {"replayRecord", &g_replayRecord, VALUE_SIGNED},
+    {"replayPlay", &g_replayPlay, VALUE_SIGNED},
+    {"Net_Perf_CliSendFrames", &g_Net_Perf_CliSendFrames, VALUE_SIGNED},
+    {"Net_Perf_ServSendFrames", &g_Net_Perf_ServSendFrames, VALUE_SIGNED},
+    {"Net_Perf_CliInterp", &g_Net_Perf_CliInterp, VALUE_CHARBOOL},
+    {"Net_Perf_CliPredict", &g_Net_Perf_CliPredict, VALUE_CHARBOOL},
+    {"Net_Perf_ExtraLatencyOn", &g_Net_Perf_ExtraLatencyOn, VALUE_CHARBOOL},
+    {"Net_Perf_ExtraLatency", &g_Net_Perf_ExtraLatency, VALUE_SIGNED},
+    {"Net_FastStart", &g_Net_FastStart, VALUE_CHARBOOL},
+    {"Net_FastHost", &g_Net_FastHost, VALUE_CHARBOOL},
+    {"", 0, 0},
 };
 
 // FUNCTION: REDLINE 0x0043df94
 void Config::DefaultConf() {
     int i = 0;
     this->ClearConfValues();
-    while (g_DefaultConf[i].name[0]) {
+    while (g_ConfDefault[i].name[0]) {
         Value *v = new Value();
-        v->kind = g_DefaultConf[i].kind;
-        strcpy(v->line, g_DefaultConf[i].name);
-        strlwr(v->line);
+        v->kind = g_ConfDefault[i].kind;
+        strcpy(v->name, g_ConfDefault[i].name);
+        strlwr(v->name);
 
         switch (v->kind) {
         case 0:
         case 3:
-            v->value.integer = *(int *)g_DefaultConf[i].value;
+            v->value.integer = *(int *)g_ConfDefault[i].value;
             break;
         case 4:
-            v->value.integer = *(bool *)g_DefaultConf[i].value;
+            v->value.integer = *(bool *)g_ConfDefault[i].value;
             break;
         case 1:
-            v->value.decimal = *(float *)g_DefaultConf[i].value;
+            v->value.decimal = *(float *)g_ConfDefault[i].value;
             break;
         case 2:
-            v->value.string = strdup((char *)g_DefaultConf[i].value);
+            v->value.string = strdup((char *)g_ConfDefault[i].value);
             break;
         default:
             break;
@@ -791,5 +1041,69 @@ int Config::Load() {
     }
 
     fclose(file);
+    return 0;
+}
+
+// GLOBAL: REDLINE 0x005CE654
+float g_MouseFoot;
+// GLOBAL: REDLINE 0x005CE658
+float g_MouseCar;
+
+// FUNCTION: REDLINE 0x0043F9D3
+int Config::ApplyKeybinds(bool car) {
+    int i;
+    UnbindAllKeybinds();
+    // Apply foot keybindings
+    for (i = 0; i < this->keybind_size; ++i)
+        if (this->keybinds_foot[i] > -1)
+            BindKey(i, this->keybinds_foot[i]);
+    for (i = 0; i < this->mousebind_size; ++i)
+        if (this->mousebinds_foot[i] > -1)
+            BindMouse(i, this->mousebinds_foot[i]);
+    for (i = 0; i < this->joybind_size; ++i)
+        if (this->joybinds_foot[i] > -1)
+            BindJoybutton(i, this->joybinds_foot[i]);
+    for (i = 0; i < this->jhatbind_size; ++i)
+        if (this->jhatbinds_foot[i] > -1)
+            BindJoyhat(i, this->jhatbinds_foot[i]);
+
+    if (car) {
+        // Remove conflicting foot keybinds for car-bound actions
+        for (i = 0; i < this->unused_size6; ++i)
+            if (this->keybinds_car[i] > -1)
+                UnbindAction(this->keybinds_car[i]);
+        for (i = 0; i < this->unused_size7; ++i)
+            if (this->mousebinds_car[i] > -1)
+                UnbindAction(this->mousebinds_car[i]);
+        for (i = 0; i < this->unused_size8; ++i)
+            if (this->joybinds_car[i] > -1)
+                UnbindAction(this->joybinds_car[i]);
+        for (i = 0; i < this->unused_size9; ++i)
+            if (this->jhatbinds_car[i] > -1)
+                UnbindAction(this->jhatbinds_car[i]);
+
+        // Apply car keybindings
+        for (i = 0; i < this->unused_size6; ++i)
+            if (this->keybinds_car[i] > -1)
+                BindKey(i, this->keybinds_car[i]);
+        for (i = 0; i < this->unused_size7; ++i)
+            if (this->mousebinds_car[i] > -1)
+                BindMouse(i, this->mousebinds_car[i]);
+        for (i = 0; i < this->unused_size8; ++i)
+            if (this->joybinds_car[i] > -1)
+                BindJoybutton(i, this->joybinds_car[i]);
+        for (i = 0; i < this->unused_size9; ++i)
+            if (this->jhatbinds_car[i] > -1)
+                BindJoyhat(i, this->jhatbinds_car[i]);
+    }
+
+    // Load globals
+    Value *conf_val = this->GetValue("Mouse_Foot");
+    if (conf_val != NULL)
+        g_MouseFoot = conf_val->value.decimal;
+    conf_val = this->GetValue("Mouse_Car");
+    if (conf_val != NULL)
+        g_MouseCar = conf_val->value.decimal;
+
     return 0;
 }

@@ -1,23 +1,23 @@
 #include <stdio.h>
-#include <windows.h>
-#include <time.h>
 #include <sys/stat.h>
+#include <time.h>
+#include <windows.h>
 #include <winuser.h>
 
-#include "log.h"
-#include "resource.h"
 #include "3dnow.h"
-#include "scripts.h"
-#include "pack.h"
-#include "globals.h"
 #include "enginestate.h"
+#include "globals.h"
+#include "log.h"
+#include "pack.h"
+#include "resource.h"
+#include "scripts.h"
 
 // GLOBAL: REDLINE 0x005c3f70
 Log g_Log;
 // GLOBAL: REDLINE 0x005ceb14
-EngineState* g_EngineState;
+EngineState *g_EngineState;
 // GLOBAL: REDLINE 0x005a8c94
-StateTree* g_StateTree;
+StateTree *g_StateTree;
 
 // GLOBAL: REDLINE 0x005cebd0
 HINSTANCE g_hInstance;
@@ -28,7 +28,7 @@ int g_nCmdShow;
 char g_registryKey[128];
 
 // GLOBAL: REDLINE 0x005ccf50
-void* g_GameData;
+void *g_GameData;
 
 // GLOBAL: REDLINE 0x005cebec
 time_t g_time;
@@ -64,21 +64,121 @@ BOOL RegisterWindowClass() {
 }
 
 // STUB: REDLINE 0x0053fb64
-void InitGlobals() {}
+void InitGlobals() {
+    // strcpy(&byte_5CE6EC, "man");
+    // strcat(&Buffer, "none_selected.wld");
+    // byte_5CE600 = 0;
+    g_has3DNow = 0;
+    // byte_5CE602 = 0;
+    // byte_5CE8FE = 0;
+    g_DebugMouse = 0;
+    g_DebugFrames = 0;
+    g_PlayDemo = 0;
+    g_RecordDemo = 0;
+    g_replayPlay = 0;
+    g_replayRecord = 0;
+    g_Windowed = 0;
+    g_AIActive = 1;
+    g_D3DSound = 0;
+    g_QuickRun = 0;
+    g_NumFrames = 60;
+    // dword_5CE670 = 0;
+    g_LastMap[0] = 0;
+    // byte_5CE6AC = 0;
+    // byte_5CE6EC = 0;
+    // Buffer = 0;
+    g_FreeLook = 1;
+    g_DrawShadows = 1;
+    g_MipMapping = 1;
+    g_Mouse_Foot = 4.0;
+    g_Mouse_Car = 2.0;
+    g_DisplayDevice[0] = 0;
+    g_DeviceDriver[0] = 0;
+    g_ScreenWidth = 640;
+    g_ScreenHeight = 480;
+    g_ScreenBPP = 16;
+    g_ScreenGamma = 1.0;
+    g_CreateUseFile = 1;
+    // byte_5CE8FF = 0;
+    g_DisplayParticles = 1;
+    g_DisplayTireTreads = 1;
+    g_DisplayScreenFlash = 1;
+    g_DifficultyLevel = 1;
+    g_EnableFog = 1;
+    g_EnviroMapping = 1;
+    g_GroundLighting = 1;
+    g_PalettedTextures = 1;
+    g_TextureDetail = 1;
+    g_LimitParticleSize = 0;
+    g_TripleBuffer = 1;
+    g_DXtextureManager = 0;
+    g_DitherEnable = 1;
+    g_WeaponDisplayMin = 0;
+    g_PersonGunDraw = 1;
+    g_carDashboardDraw = 1;
+    g_turretDashboardDraw = 1;
+    g_carCamMode = 1;
+    g_turretCamMode = 0;
+    g_carFollowCamMode = 0;
+    g_turretFollowCamMode = 0;
+    g_ReverseYAxis = 0;
+    g_ReverseYAxisCar = 0;
+    g_cruiseControl = 1;
+    g_soundChannels = 32;
+    g_Joystick_UpDown = 4.0;
+    g_Joystick_LeftRight = 4.0;
+    g_CarJoystick_UpDown = 4.0;
+    g_CarJoystick_LeftRight = 4.0;
+    g_Joystick_FreeLook = 1;
+    g_Joystick_DeadZoneX = 5;
+    g_Joystick_DeadZoneY = 5;
+    g_Master_Volume = 100.0;
+    g_CDAudio_Active = 1;
+    g_IntroVideo = 1;
+    // g_OptConsoleEnabled = 0;
+    g_Net_ConsoleTCP = 1;
+    g_Net_Perf_CliSendFrames = 2;
+    g_Net_Perf_ServSendFrames = 2;
+    g_Net_Perf_CliInterp = 1;
+    g_Net_Perf_CliPredict = 1;
+    // byte_5CE93A = 1;
+    // byte_5CE93B = 0;
+    g_Net_Perf_ExtraLatencyOn = 0;
+    g_Net_Perf_ExtraLatency = 10;
+    // byte_5CE93C = 1;
+    // byte_5CE8FD = 0;
+    // byte_5CE8FC = 0;
+    g_Net_Mode_CTF_FlagDrop = 0;
+    g_Net_Mode_ScoreLimitOn = 0;
+    g_Net_Mode_TimeLimitOn = 0;
+    g_Net_Mode_ScoreLimit = 1;
+    // dword_5CE924 = 4;
+    g_Net_Mode_TimeLimit = 1;
+    g_Net_MaxPlayers = 8;
+    g_Net_FastStart = 0;
+    g_Net_FastHost = 0;
+    // byte_5CE90D = 0;
+    g_Net_SmartCrosshair = 0;
+    g_Net_FriendlyFire = 0;
+    g_Net_PlayerTeam = 0;
+    g_Net_PlayerSkel = 0;
+    g_Net_TeamPlace = 0;
+    g_Net_Mode_CTF = 0;
+    g_Net_Mode_CTF_Adv = 1;
+    // byte_5CE90F = 0;
+    // return sub_53FF47();
+}
 
 // Semantics uncertain
 // FUNCTION: REDLINE 0x0048F261
-void SetUnknown(short v) {
-    g_unknown = v;
-}
+void SetUnknown(short v) { g_unknown = v; }
 
 // FUNCTION: REDLINE 0x0048F256
-short GetUnknown() {
-    return g_unknown;
-}
+short GetUnknown() { return g_unknown; }
 
 // FUNCTION: REDLINE 0x00551d73
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow) {
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
+                   int nCmdShow) {
     HWND existing_window = FindWindowA("Redline", NULL);
     if (IsWindow(existing_window)) {
         HWND popup = GetLastActivePopup(existing_window);
@@ -116,22 +216,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
 
     char exe[32];
     LPSTR cmdline = GetCommandLineA();
-    char* quot = strchr(cmdline, '"');
+    char *quot = strchr(cmdline, '"');
     if (quot != NULL) {
         strcpy(exe, quot + 1);
         quot = strchr(exe, '"');
         if (quot != NULL) {
-            *quot = 0; 
+            *quot = 0;
         }
     } else {
         strcpy(exe, "redline.exe");
     }
-    
+
     struct _stat buf;
     int exists = _stat(exe, &buf);
     if (exists) {
         // Exists
-        HANDLE file = CreateFileA(exe, GENERIC_READ, 1, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+        HANDLE file = CreateFileA(exe, GENERIC_READ, 1, NULL, OPEN_EXISTING,
+                                  FILE_ATTRIBUTE_NORMAL, NULL);
         if (file != (HANDLE)-1) {
             FILETIME last_write;
             FILETIME last_write_local;
@@ -142,14 +243,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
             CloseHandle(file);
 
             char msg[128];
-            sprintf(msg, "Execute: %s  (Date: %d/%02d/%02d %d:%02d:%02d  Size: %d)", exe, sys.wMonth, sys.wDay, sys.wYear, sys.wHour, sys.wMinute, sys.wSecond, buf.st_size);
+            sprintf(msg,
+                    "Execute: %s  (Date: %d/%02d/%02d %d:%02d:%02d  Size: %d)",
+                    exe, sys.wMonth, sys.wDay, sys.wYear, sys.wHour,
+                    sys.wMinute, sys.wSecond, buf.st_size);
             g_Log.Debug(msg);
         }
     }
 
     if (g_unk != 0) {
-        if(!LoadPack("Redline.bgd", 0, 0)) {
-            MessageBoxA(NULL, "Fatal Error Loading:  Redline.bgd\n\n\nConsult the readme file for more information.", NULL, MB_ICONEXCLAMATION);
+        if (!LoadPack("Redline.bgd", 0, 0)) {
+            MessageBoxA(NULL,
+                        "Fatal Error Loading:  Redline.bgd\n\n\nConsult the "
+                        "readme file for more information.",
+                        NULL, MB_ICONEXCLAMATION);
             return 0;
         }
         char pathbuf[128];
@@ -161,7 +268,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
             if (strcmpi(pathbuf, "redline.bgd") != 0) {
                 LoadPack(pathbuf, 0, 0);
             }
-            while(FindNextFileA(file, &findFileData)) {
+            while (FindNextFileA(file, &findFileData)) {
                 strcpy(pathbuf, findFileData.cFileName);
                 if (strcmpi(pathbuf, "redline.bgd") != 0) {
                     LoadPack(pathbuf, 0, 0);
@@ -170,22 +277,25 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
         }
     }
 
-    if (LoadScripts("PC_Script.thg") || LoadScripts("..\\GameData\\PC_Script.thg")) {
+    if (LoadScripts("PC_Script.thg") ||
+        LoadScripts("..\\GameData\\PC_Script.thg")) {
         g_GameData = g_Scripts.Lookup(20, "GameData", NULL);
         if (!g_GameData) {
-            MessageBoxA(NULL, "Fatal Error Loading: Misc data script 'GameData'", NULL, MB_ICONEXCLAMATION);
+            MessageBoxA(NULL,
+                        "Fatal Error Loading: Misc data script 'GameData'",
+                        NULL, MB_ICONEXCLAMATION);
             return 0;
         }
 
         g_EngineState = new EngineState();
         g_StateTree = new StateTree();
         g_StateTree->PopulateNodes();
-        StateNode* next = g_StateTree->Next(1);
-        if (!next) return 0;
+        StateNode *next = g_StateTree->Next(1);
+        if (!next)
+            return 0;
         SetUnknown(1);
         g_EngineState->ChangeState(next->state_id);
     }
 
     return 0;
 }
-

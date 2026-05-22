@@ -208,6 +208,14 @@ enum Action {
 };
 
 bool InitKeybinds();
+void UnbindAllKeybinds();
+void UnbindAction(int action);
+
+int BindKey(int key, int action);
+int BindMouse(int mbutton, int action);
+int BindJoybutton(int button, int action);
+int BindJoyhat(int button, int action);
+
 int LookupKeyname(char *name);
 int LookupMbuttonName(char *name);
 int LookupJoybuttonName(char *name);
@@ -222,13 +230,14 @@ char *GetJoyhatName(int idx);
 
 // Structure size isn't correct *yet*
 class Keybinds {
-    int unk[281];
-    int unka[256];
+    // Key -> action map?
+    int key_map[281];
+    // Action -> keys map?
+    int action_map[64][4];
+    char pad[197 * 4];
 
-    char pad[788];
-
-    int unk1[256];
-    int unk2[256];
+    int key_to_scancode[256];
+    int scancode_to_key[256];
 
     char *key_names[255];
     char *mbutton_names[3];
@@ -239,6 +248,27 @@ class Keybinds {
   public:
     Keybinds();
     int Init();
+
+    void UnbindAll();
+    int Unbind(int key);
+    void UnbindAction(int action);
+
+  private:
+    // Uses global key index
+    int Bind(int key, int action);
+
+  public:
+    // Uses individual enums per input type
+    int BindKey(int key, int action);
+    int BindMouse(int mbutton, int action);
+    int BindJoybutton(int button, int action);
+    int BindJoyhat(int button, int action);
+
+    int KeyToInput(int key);
+    int MouseToInput(int mbutton);
+    int JoybuttonToInput(int button);
+    int JoyhatToInput(int button);
+
     int LookupKeyName(char *str);
     int LookupMbuttonName(char *str);
     int LookupJoybuttonName(char *str);
