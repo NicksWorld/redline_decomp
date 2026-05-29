@@ -1,9 +1,10 @@
 #pragma once
 
 namespace StateImpl {
-    namespace Shutdown {
+    namespace Debug {
+        bool Init(int state);
         bool Shutdown(int state);
-        bool Unk(int state);
+        bool EventTick();
         bool Tick();
     };
 };

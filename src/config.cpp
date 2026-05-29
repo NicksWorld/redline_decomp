@@ -9,6 +9,7 @@
 #include "keybinds.h"
 #include "log.h"
 
+// GLOBAL: REDLINE 0x005a55dc
 Config *g_Config;
 
 // FUNCTION: REDLINE 0x0043d46b
@@ -203,6 +204,33 @@ int Config::StoreValue(Value *v) {
         v->next = NULL;
     this->conf_values[i] = v;
     return 0;
+}
+
+// FUNCTION: REDLINE 0x0043F460
+int Config::SetStringValue(const char *key, const char *value) {
+    bool is_new = false;
+    if (!value || !key)
+        return -1;
+    Value *val = this->GetValue(key);
+    if (!val) {
+        val = new Value();
+        strcpy(val->name, key);
+        strlwr(val->name);
+        val->kind = VALUE_STRING;
+        is_new = true;
+    }
+    if (val->kind == 2 && val->value.string)
+        free(val->value.string);
+    val->kind = 2;
+    val->value.string = strdup(value);
+    int res = 0;
+    if (is_new) {
+        res = this->StoreValue(val);
+        if (res != 0) {
+            delete val;
+        }
+    }
+    return res;
 }
 
 // FUNCTION: REDLINE 0x0043F3B0
@@ -919,6 +947,47 @@ void Config::DefaultConf() {
     }
 }
 
+// FUNCTION: REDLINE 0x00440E05
+void Config::PopulateDefaults() {
+    int i = 0;
+    while (g_ConfDefault[i].name[0]) {
+        bool created = false;
+        Value *v = this->GetValue(g_ConfDefault[i].name);
+        if (!v) {
+            v = new Value();
+            created = true;
+        }
+        v->kind = g_ConfDefault[i].kind;
+        strcpy(v->name, g_ConfDefault[i].name);
+        strlwr(v->name);
+        switch (v->kind) {
+        case 0:
+        case 3:
+            v->value.integer = *(int *)g_ConfDefault[i].value;
+            break;
+        case 4:
+            v->value.integer = *(unsigned char *)g_ConfDefault[i].value != 0;
+            break;
+        case 1:
+            v->value.decimal = *(float *)g_ConfDefault[i].value;
+            break;
+        case 2:
+            if (v->value.string) {
+                free(v->value.string);
+                v->value.string = NULL;
+            }
+            v->value.string = strdup((char *)g_ConfDefault[i].value);
+            break;
+        default:
+            break;
+        }
+        if (created)
+            this->StoreValue(v);
+
+        ++i;
+    }
+}
+
 // FUNCTION: REDLINE 0x0043DF77
 void Config::Default() {
     this->LoadPreset(0);
@@ -996,7 +1065,8 @@ int Config::Load() {
                     char *key = GetKeyName(k);
                     char *act = GetActionName(j);
                     Warn("*Max Bind Exceeded (%d) for %s: Removing bind for %s",
-                         key, act);
+                         key,
+                         act);
                     arr1[k] = -1;
                     --count;
                 }
@@ -1008,7 +1078,8 @@ int Config::Load() {
                     char *key = GetMbuttonName(k);
                     char *act = GetActionName(j);
                     Warn("*Max Bind Exceeded (%d) for %s: Removing bind for %s",
-                         key, act);
+                         key,
+                         act);
                     arr1[k] = -1;
                     --count;
                 }
@@ -1020,7 +1091,8 @@ int Config::Load() {
                     char *key = GetJoybuttonName(k);
                     char *act = GetActionName(j);
                     Warn("*Max Bind Exceeded (%d) for %s: Removing bind for %s",
-                         key, act);
+                         key,
+                         act);
                     arr1[k] = -1;
                     --count;
                 }
@@ -1032,7 +1104,8 @@ int Config::Load() {
                     char *key = GetJoyhatName(k);
                     char *act = GetActionName(j);
                     Warn("*Max Bind Exceeded (%d) for %s: Removing bind for %s",
-                         key, act);
+                         key,
+                         act);
                     arr1[k] = -1;
                     --count;
                 }
@@ -1044,10 +1117,182 @@ int Config::Load() {
     return 0;
 }
 
-// GLOBAL: REDLINE 0x005CE654
-float g_MouseFoot;
-// GLOBAL: REDLINE 0x005CE658
-float g_MouseCar;
+// GLOBAL: REDLINE 0x0058CB38
+const char *g_CmdlineOptions[] = {"connect",
+                                  "name",
+                                  "team",
+                                  "skin",
+                                  "game",
+                                  "ip",
+                                  "host",
+                                  "maxplayers",
+                                  "hostname",
+                                  "console",
+                                  "lobby"};
+
+enum CmdlineOptions {
+    CMD_CONNECT = 0,
+    CMD_NAME = 1,
+    CMD_TEAM = 2,
+    CMD_SKIN = 3,
+    CMD_GAME = 4,
+    CMD_IP = 5,
+    CMD_HOST = 6,
+    CMD_MAXPLAYERS = 7,
+    CMD_HOSTNAME = 8,
+    CMD_CONSOLE = 9,
+    CMD_LOBBY = 10,
+    CMD_UNK = 11,
+};
+
+// FUNCTION: REDLINE 0x00441149
+char *Config::TokenizeCmdline(char *cmdline, int *out_token, char *out_val) {
+    if (!cmdline || !*cmdline)
+        return NULL;
+    char *cursor = cmdline;
+    while (*cursor != '+' && *cursor)
+        ++cursor;
+
+    if (*cursor == NULL) {
+        *out_token = CMD_UNK;
+        return NULL;
+    }
+
+    cursor++;
+    if (*cursor == NULL) {
+        *out_token = CMD_UNK;
+        return NULL;
+    }
+
+    int i = 0;
+    char buf[32];
+    while (!isspace(*cursor) && *cursor)
+        buf[i++] = *cursor++;
+    buf[i] = 0;
+
+    for (*out_token = 0; *out_token < CMD_UNK; ++*out_token) {
+        if (!strcmp(buf, g_CmdlineOptions[*out_token]))
+            break;
+    }
+
+    if (*out_token == CMD_UNK)
+        return cursor;
+    if (*out_token == CMD_CONSOLE) {
+        *out_val = NULL;
+        return cursor;
+    }
+    if (*out_token == CMD_LOBBY) {
+        *out_val = NULL;
+        return cursor;
+    }
+    while (isspace(*cursor) && *cursor)
+        ++cursor;
+    if (*cursor == NULL) {
+        *out_token = CMD_UNK;
+        return NULL;
+    }
+
+    i = 0;
+    bool quote = false;
+    while ((!isspace(*cursor) || quote) && *cursor) {
+        if (*cursor == '"') {
+            quote = !quote;
+            ++cursor;
+            continue;
+        }
+        out_val[i++] = *cursor;
+        ++cursor;
+    }
+    out_val[i] = 0;
+    return cursor;
+}
+
+// GLOBAL: REDLINE 0x005ce944
+short g_ConnectPort = 0;
+// GLOBAL: REDLINE 0x005cea46
+char g_ConnectIP[128];
+
+// GLOBAL: REDLINE 0x005ce8ff
+bool g_ConnectRelated1;
+// GLOBAL: REDLINE 0x005ce900
+bool g_ConnectRelated2;
+
+// FUNCTION: REDLINE 0x00441365
+void Config::ProcessConnect(char *val) {
+    g_ConnectRelated1 = true;
+    g_ConnectRelated2 = false;
+    int i = 0;
+    for (char *c = val; *c; ++c) {
+        if (*c == ':') {
+            g_ConnectPort = (short)atol(c + 1);
+            break;
+        }
+        ++i;
+    }
+    strncpy(g_ConnectIP, val, i);
+    g_ConnectIP[i] = 0;
+}
+
+// FUNCTION: REDLINE 0x00441439
+void Config::ProcessHost(char *val) {
+    g_ConnectRelated1 = true;
+    g_ConnectRelated2 = true;
+}
+
+// FUNCTION: REDLINE 0x004413F0
+void Config::ProcessPlayerName(char *val) {
+    this->SetStringValue("Player", val);
+}
+
+// FUNCTION: REDLINE 0x0044140e
+void Config::ProcessTeam(char *val) {}
+
+// FUNCTION: REDLINE 0x0044141B
+void Config::ProcessHostname(char *val) { strcpy(g_Net_GameName, val); }
+
+// FUNCTION: REDLINE 0x00440FE1
+bool Config::ProcessCmdline() {
+    char *cmdline = GetCommandLineA();
+    if (!cmdline || !*cmdline)
+        return 0;
+    Warn("Processing CMD Line: %s", cmdline);
+    char *cursor = cmdline;
+    while (cursor != NULL) {
+        int opt;
+        char val[128];
+        cursor = this->TokenizeCmdline(cursor, &opt, val);
+        int x = opt;
+        switch (x) {
+        case CMD_CONNECT:
+            this->ProcessConnect(val);
+            break;
+        case CMD_NAME:
+            this->ProcessPlayerName(val);
+            break;
+        case CMD_TEAM:
+            this->ProcessTeam(val);
+            break;
+        case CMD_HOST:
+            this->ProcessHost(val);
+            break;
+        case CMD_HOSTNAME:
+            this->ProcessHostname(val);
+            break;
+        case CMD_CONSOLE:
+            g_ConsoleEnabled = 1;
+            return true;
+        case CMD_LOBBY:
+            g_LobbyEnabled = 1;
+            return true;
+        default:
+            break;
+        }
+    }
+    if (g_ConnectRelated1 || g_LobbyEnabled) {
+        return true;
+    }
+    return false;
+}
 
 // FUNCTION: REDLINE 0x0043F9D3
 int Config::ApplyKeybinds(bool car) {
@@ -1100,10 +1345,10 @@ int Config::ApplyKeybinds(bool car) {
     // Load globals
     Value *conf_val = this->GetValue("Mouse_Foot");
     if (conf_val != NULL)
-        g_MouseFoot = conf_val->value.decimal;
+        g_Mouse_Foot = conf_val->value.decimal;
     conf_val = this->GetValue("Mouse_Car");
     if (conf_val != NULL)
-        g_MouseCar = conf_val->value.decimal;
+        g_Mouse_Car = conf_val->value.decimal;
 
     return 0;
 }

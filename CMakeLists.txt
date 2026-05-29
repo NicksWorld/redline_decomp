@@ -18,14 +18,18 @@ add_executable(redline WIN32
     src/file.cpp
     src/keybinds.cpp
     src/config.cpp
+    src/replay.cpp
+    src/registry.cpp
     thirdparty/3dnow/amddcpu.cpp
 
     # Game state methods
     src/state/none.cpp
+    src/state/debug.cpp
     src/state/shutdown.cpp
 
-    # res/redline.rc
+    res/redline.rc
 )
+target_link_libraries(redline PRIVATE winmm.lib)
 target_include_directories(redline PRIVATE res)
 # target_link_options(redline PRIVATE "/OPT:REF")
 reccmp_add_target(redline ID REDLINE)

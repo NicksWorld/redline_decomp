@@ -23,6 +23,8 @@ StateTree *g_StateTree;
 HINSTANCE g_hInstance;
 // GLOBAL: REDLINE 0x005ceba4
 int g_nCmdShow;
+// GLOBAL: REDLINE 0x005cebd4
+HWND g_Window = NULL;
 
 // GLOBAL: REDLINE 0x005ceb1c
 char g_registryKey[128];
@@ -41,6 +43,19 @@ int g_unk;
 
 // GLOBAL: REDLINE 0x005a8f64
 short g_unknown;
+
+// GLOBAL: REDLINE 0x005ce8f8
+bool g_ConsoleEnabled = false;
+// GLOBAL: REDLINE 0x005CE8FE
+bool g_LobbyEnabled = false;
+
+// GLOBAL: REDLINE 0x005cebac
+HANDLE g_HeartbeatThread;
+// GLOBAL: REDLINE 0x005cebb0
+HANDLE g_MainThread;
+
+// GLOBAL: REDLINE 0x005ce600
+bool g_unkBool;
 
 // FUNCTION: REDLINE 0x00551cd9
 BOOL RegisterWindowClass() {
@@ -67,7 +82,7 @@ BOOL RegisterWindowClass() {
 void InitGlobals() {
     // strcpy(&byte_5CE6EC, "man");
     // strcat(&Buffer, "none_selected.wld");
-    // byte_5CE600 = 0;
+    g_unkBool = 0;
     g_has3DNow = 0;
     // byte_5CE602 = 0;
     // byte_5CE8FE = 0;
@@ -176,9 +191,35 @@ void SetUnknown(short v) { g_unknown = v; }
 // FUNCTION: REDLINE 0x0048F256
 short GetUnknown() { return g_unknown; }
 
+// STUB: REDLINE 0x005536F6
+int event_loop() {
+    MSG msg;
+    while (true) {
+        while (PeekMessageA(&msg, NULL, 0, 0, 1)) {
+            if (msg.message == WM_QUIT)
+                return 1;
+            TranslateMessage(&msg);
+            DispatchMessageA(&msg);
+        }
+        // TODO
+
+        int next = g_EngineState->GetQueuedState(false);
+        if (next != -1) {
+            if (g_EngineState->ChangeState(next) != next)
+                return 0;
+        } else {
+            if (!g_EventTick()) {
+                g_Log.Debug("Exiting Idle Process");
+                return 0;
+            }
+        }
+    }
+
+    return 0;
+}
+
 // FUNCTION: REDLINE 0x00551d73
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
-                   int nCmdShow) {
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow) {
     HWND existing_window = FindWindowA("Redline", NULL);
     if (IsWindow(existing_window)) {
         HWND popup = GetLastActivePopup(existing_window);
@@ -294,7 +335,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
         if (!next)
             return 0;
         SetUnknown(1);
-        g_EngineState->ChangeState(next->state_id);
+        int state = g_EngineState->ChangeState(next->state_id);
+        if (state != next->state_id)
+            return 0;
+        // TODO: int 0x005CEBDC = 1
+        if (event_loop()) {
+            return 1;
+        } else {
+            // Cleanup stuff
+        }
     }
 
     return 0;

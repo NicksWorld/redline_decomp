@@ -7,23 +7,33 @@
 #include "log.h"
 
 #include "state/none.h"
+#include "state/debug.h"
 #include "state/shutdown.h"
 
-#define STATE_STUB(STATE_STUB_NAME) \
-    bool STATE_STUB_NAME(int state) { \
-        char state_name[64]; \
-        StateName(state, state_name); \
-        char buf[128]; \
-        sprintf(buf, "Called state stub %s with state %s", #STATE_STUB_NAME, state_name); \
-        g_Log.Debug(buf); \
-        return false; \
+#define STATE_STUB(STATE_STUB_NAME)                                            \
+    bool STATE_STUB_NAME(int state) {                                          \
+        char state_name[64];                                                   \
+        StateName(state, state_name);                                          \
+        char buf[128];                                                         \
+        sprintf(buf, "Called state stub %s with state %s", #STATE_STUB_NAME,   \
+                state_name);                                                   \
+        g_Log.Debug(buf);                                                      \
+        return true;                                                           \
     }
 
+bool TickStub() {
+    g_Log.Debug("Called tick stub");
+    return true;
+}
+
+bool EventTickStub() {
+    g_Log.Debug("Called event tick stub");
+    return true;
+}
+
 // Stubs to populate dispatch function pointers for debug
-STATE_STUB(TickStub)
 STATE_STUB(InitStub)
 STATE_STUB(ShutdownStub)
-STATE_STUB(UnkStub)
 
 // STUB: REDLINE 0x00541e4b
 bool EngineState::SetupStates() {
@@ -75,90 +85,90 @@ bool EngineState::SetupStates() {
     for (int j = 0; j < NUM_STATES; ++j) {
         this->states[j] = new StateDispatchTable();
     }
+    this->states[STATE_NONE]->event_tick = StateImpl::None::EventTick;
     this->states[STATE_NONE]->tick = StateImpl::None::Tick;
-    this->states[STATE_NONE]->unk = StateImpl::None::Unk;
     this->states[STATE_NONE]->init = StateImpl::None::Init;
     this->states[STATE_NONE]->shutdown = StateImpl::None::Shutdown;
     this->states[STATE_NONE]->flag = true;
 
-    this->states[STATE_DEBUG]->tick = TickStub;
-    this->states[STATE_DEBUG]->unk = UnkStub;
-    this->states[STATE_DEBUG]->init = InitStub;
-    this->states[STATE_DEBUG]->shutdown = ShutdownStub;
-    this->states[STATE_DEBUG]->flag = true;
+    this->states[STATE_DEBUG]->event_tick = StateImpl::Debug::EventTick;
+    this->states[STATE_DEBUG]->tick = StateImpl::Debug::Tick;
+    this->states[STATE_DEBUG]->init = StateImpl::Debug::Init;
+    this->states[STATE_DEBUG]->shutdown = StateImpl::Debug::Shutdown;
+    this->states[STATE_DEBUG]->flag = false;
 
+    this->states[STATE_INIT_AV]->event_tick = EventTickStub;
     this->states[STATE_INIT_AV]->tick = TickStub;
-    this->states[STATE_INIT_AV]->unk = UnkStub;
     this->states[STATE_INIT_AV]->init = InitStub;
     this->states[STATE_INIT_AV]->shutdown = ShutdownStub;
-    this->states[STATE_INIT_AV]->flag = true;
+    this->states[STATE_INIT_AV]->flag = false;
 
+    this->states[STATE_INTRO]->event_tick = EventTickStub;
     this->states[STATE_INTRO]->tick = TickStub;
-    this->states[STATE_INTRO]->unk = UnkStub;
     this->states[STATE_INTRO]->init = InitStub;
     this->states[STATE_INTRO]->shutdown = ShutdownStub;
     this->states[STATE_INTRO]->flag = true;
 
+    this->states[STATE_START_MENU]->event_tick = EventTickStub;
     this->states[STATE_START_MENU]->tick = TickStub;
-    this->states[STATE_START_MENU]->unk = UnkStub;
     this->states[STATE_START_MENU]->init = InitStub;
     this->states[STATE_START_MENU]->shutdown = ShutdownStub;
-    this->states[STATE_START_MENU]->flag = true;
+    this->states[STATE_START_MENU]->flag = false;
 
+    this->states[STATE_GAME_INIT]->event_tick = EventTickStub;
     this->states[STATE_GAME_INIT]->tick = TickStub;
-    this->states[STATE_GAME_INIT]->unk = UnkStub;
     this->states[STATE_GAME_INIT]->init = InitStub;
     this->states[STATE_GAME_INIT]->shutdown = ShutdownStub;
     this->states[STATE_GAME_INIT]->flag = true;
 
+    this->states[STATE_GAME_PLAY]->event_tick = EventTickStub;
     this->states[STATE_GAME_PLAY]->tick = TickStub;
-    this->states[STATE_GAME_PLAY]->unk = UnkStub;
     this->states[STATE_GAME_PLAY]->init = InitStub;
     this->states[STATE_GAME_PLAY]->shutdown = ShutdownStub;
-    this->states[STATE_GAME_PLAY]->flag = true;
+    this->states[STATE_GAME_PLAY]->flag = false;
 
+    this->states[STATE_VIDEO_PLAYBACK]->event_tick = EventTickStub;
     this->states[STATE_VIDEO_PLAYBACK]->tick = TickStub;
-    this->states[STATE_VIDEO_PLAYBACK]->unk = UnkStub;
     this->states[STATE_VIDEO_PLAYBACK]->init = InitStub;
     this->states[STATE_VIDEO_PLAYBACK]->shutdown = ShutdownStub;
     this->states[STATE_VIDEO_PLAYBACK]->flag = true;
 
+    this->states[STATE_GAME_MENU]->event_tick = EventTickStub;
     this->states[STATE_GAME_MENU]->tick = TickStub;
-    this->states[STATE_GAME_MENU]->unk = UnkStub;
     this->states[STATE_GAME_MENU]->init = InitStub;
     this->states[STATE_GAME_MENU]->shutdown = ShutdownStub;
-    this->states[STATE_GAME_MENU]->flag = true;
+    this->states[STATE_GAME_MENU]->flag = false;
 
+    this->states[STATE_NETWORK_SETUP]->event_tick = EventTickStub;
     this->states[STATE_NETWORK_SETUP]->tick = TickStub;
-    this->states[STATE_NETWORK_SETUP]->unk = UnkStub;
     this->states[STATE_NETWORK_SETUP]->init = InitStub;
     this->states[STATE_NETWORK_SETUP]->shutdown = ShutdownStub;
     this->states[STATE_NETWORK_SETUP]->flag = true;
 
+    this->states[STATE_NETWORK_DOWNLOAD]->event_tick = EventTickStub;
     this->states[STATE_NETWORK_DOWNLOAD]->tick = TickStub;
-    this->states[STATE_NETWORK_DOWNLOAD]->unk = UnkStub;
     this->states[STATE_NETWORK_DOWNLOAD]->init = InitStub;
     this->states[STATE_NETWORK_DOWNLOAD]->shutdown = ShutdownStub;
     this->states[STATE_NETWORK_DOWNLOAD]->flag = true;
 
+    this->states[STATE_NETWORK_TALLY]->event_tick = EventTickStub;
     this->states[STATE_NETWORK_TALLY]->tick = TickStub;
-    this->states[STATE_NETWORK_TALLY]->unk = UnkStub;
     this->states[STATE_NETWORK_TALLY]->init = InitStub;
     this->states[STATE_NETWORK_TALLY]->shutdown = ShutdownStub;
     this->states[STATE_NETWORK_TALLY]->flag = true;
 
+    this->states[STATE_CONSOLE_PLAY]->event_tick = EventTickStub;
     this->states[STATE_CONSOLE_PLAY]->tick = TickStub;
-    this->states[STATE_CONSOLE_PLAY]->unk = UnkStub;
     this->states[STATE_CONSOLE_PLAY]->init = InitStub;
     this->states[STATE_CONSOLE_PLAY]->shutdown = ShutdownStub;
-    this->states[STATE_CONSOLE_PLAY]->flag = true;
+    this->states[STATE_CONSOLE_PLAY]->flag = false;
 
+    this->states[STATE_SHUTDOWN]->event_tick = EventTickStub;
     this->states[STATE_SHUTDOWN]->tick = TickStub;
-    this->states[STATE_SHUTDOWN]->unk = UnkStub;
     this->states[STATE_SHUTDOWN]->init = InitStub;
     this->states[STATE_SHUTDOWN]->shutdown = StateImpl::Shutdown::Shutdown;
     this->states[STATE_SHUTDOWN]->flag = true;
-    
+
     return true;
 }
 
@@ -263,9 +273,52 @@ int EngineState::QueueState(int state) {
     return state;
 }
 
+// GLOBAL: REDLINE 0x005CD174
+bool (*g_StateTick)();
+// GLOBAL: REDLINE 0x005cd178
+bool (*g_StateEventTick)();
+
+// GLOBAL: REDLINE 0x005cd170
+bool (*g_EventTick)();
+
+// FUNCTION: REDLINE 0x00553819
+bool call_state_event_tick() { return g_StateEventTick(); }
+
+// GLOBAL: REDLINE 0x005CEBE8
+int g_TimeAccumulator = 0;
+
+// STUB: REDLINE 0x00553824
+bool event_tick_timestepped() {
+    if (g_replayPlay || g_replayRecord) {
+        // TODO
+        return true;
+    }
+    int time = timeGetTime();
+    g_TimeAccumulator += time - g_LastTickTime;
+    g_LastTickTime = time;
+    if (g_TimeAccumulator >= 33) {
+        while (g_TimeAccumulator >= 33) {
+            g_StateTick();
+            g_TimeAccumulator -= 33;
+        }
+        return g_StateEventTick();
+    }
+    return true;
+}
+
+// FUNCTION: REDLINE 0x00553a81
+void LockTick() {
+    g_TickMutex.Acquire(-1);
+}
+
+// FUNCTION: REDLINE 0x00553a92
+void UnlockTick() {
+    g_TickMutex.Release();
+}
+
 // STUB: REDLINE 0x00541ac5
 int EngineState::ChangeState(int state) {
-    this->lock->Acquire(-1);
+    this->queue_lock->Acquire(-1);
     this->unk = true;
     if (state > 0xe || -1 > state) {
         this->unk = false;
@@ -283,9 +336,9 @@ int EngineState::ChangeState(int state) {
 
     // TODO: Something about console enablement?
 
-    // if (this->states[this->active_state]->unk == true) {
-    // TODO: Unlocks some global mutex
-    // }
+    if (this->states[this->active_state]->flag) {
+        LockTick();
+    }
     // TODO calls a NOP
 
     if (!this->states[this->active_state]->shutdown(state)) {
@@ -302,16 +355,16 @@ int EngineState::ChangeState(int state) {
         return this->active_state;
     }
 
-    // g_StateTick = this->states[state]->tick;
-    // g_StateUnk = this->states[state]->unk;
+    g_StateEventTick = this->states[state]->event_tick;
+    g_StateTick = this->states[state]->tick;
     if (this->states[state]->flag) {
-        // one method
+        g_EventTick = call_state_event_tick;
     } else {
-        // other
+        g_EventTick = event_tick_timestepped;
     }
     this->active_state = state;
     if (this->states[this->active_state]->flag) {
-        // unlock some global mutex
+        UnlockTick();
     }
     // NOP call
     StateName(this->active_state, dest);
@@ -319,8 +372,8 @@ int EngineState::ChangeState(int state) {
     g_Log.Debug(msg);
     this->unk = 0;
     this->queue_lock->Release();
-    // Set a global to 0
-    // set global time var
+    g_TimeAccumulator = 0;
+    g_LastTickTime = timeGetTime();
     return this->active_state;
 }
 

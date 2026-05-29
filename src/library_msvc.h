@@ -111,4 +111,7 @@
 // LIBRARY: REDLINE 0x00575f24
 // _fclose
 
+// LIBRARY: REDLINE 0x00574b80
+// _strcat
+
 #endif

@@ -67,8 +67,16 @@ class Config {
 
     void Default();
     void DefaultConf();
+    void PopulateDefaults();
 
     int Load();
+    char* TokenizeCmdline(char* cmdline, int *out_token, char* out_val);
+    void ProcessConnect(char* val);
+    void ProcessPlayerName(char* val);
+    void ProcessTeam(char* val);
+    void ProcessHost(char* val);
+    void ProcessHostname(char* val);
+    bool ProcessCmdline();
 
     int ApplyKeybinds(bool car);
 
@@ -78,6 +86,7 @@ class Config {
 
     Value* GetValue(const char* name);
     int StoreValue(Value* v);
+    int SetStringValue(const char* key, const char* val);
 
     int GetIntValue(const char* name, int* out);
     int GetFloatValue(const char* name, float* out);

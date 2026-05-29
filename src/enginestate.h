@@ -23,8 +23,8 @@ enum State {
 };
 
 struct StateDispatchTable {
-    bool (*tick)(int state);
-    bool (*unk)(int state);
+    bool (*event_tick)();
+    bool (*tick)();
     bool (*init)(int state);
     bool (*shutdown)(int state);
     bool flag;

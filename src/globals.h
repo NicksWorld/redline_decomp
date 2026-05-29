@@ -9,6 +9,7 @@ extern class Config *g_Config;
 extern class EngineState *g_EngineState;
 extern class StateTree *g_StateTree;
 extern class Keybinds *g_Keybinds;
+extern class Replay *g_Replay;
 
 // GameData script
 extern void *g_GameData;
@@ -16,6 +17,7 @@ extern void *g_GameData;
 extern HINSTANCE g_hInstance;
 extern int g_nCmdShow;
 extern char g_registryKey[128];
+extern HWND g_Window;
 
 extern time_t g_time;
 
@@ -24,6 +26,24 @@ extern int g_unk;
 extern class AssetManager g_Assets;
 
 extern int g_protection;
+
+extern HANDLE g_HeartbeatThread;
+extern HANDLE g_MainThread;
+
+extern int g_LastTickTime;
+extern bool g_HeartbeatKill;
+// Used to prevent execution of heartbeat thread if ticks are being run
+// on the event thread
+extern class Mutex g_TickMutex;
+
+extern bool (*g_StateTick)();
+extern bool (*g_EventTick)();
+
+extern bool g_ConsoleEnabled;
+extern bool g_LobbyEnabled;
+
+
+extern bool g_unkBool;
 
 #define GLOBAL_STRING_SIZE 128
 // Configurable Values
