@@ -20,6 +20,7 @@ add_executable(redline WIN32
     src/config.cpp
     src/replay.cpp
     src/registry.cpp
+    src/render.cpp
     thirdparty/3dnow/amddcpu.cpp
 
     # Game state methods
@@ -31,7 +32,9 @@ add_executable(redline WIN32
 )
 target_link_libraries(redline PRIVATE winmm.lib)
 target_include_directories(redline PRIVATE res)
-# target_link_options(redline PRIVATE "/OPT:REF")
+
+target_link_libraries(redline PRIVATE ddraw.lib dxguid.lib)
+
 reccmp_add_target(redline ID REDLINE)
 
 set_property(TARGET redline PROPERTY OUTPUT_NAME "Redline")
@@ -42,7 +45,7 @@ set_property(TARGET redline PROPERTY SUFFIX ".exe")
 set(CMAKE_CXX_FLAGS "/W3 /EHsc /GX /D \"WIN32\" /D \"_WINDOWS\"")
 set(CMAKE_CXX_FLAGS_DEBUG "/Gm /Zi /Od /D \"_DEBUG\"")
 set(CMAKE_CXX_FLAGS_RELEASE "/GX /Od /Ob2 \"NDEBUG\"")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/Zi /Ob1 /D \"NDEBUG\"")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/Zi /Ob2 /D \"NDEBUG\"")
 set(CMAKE_CXX_FLAGS_MINSIZEREL "/Os /D \"NDEBUG\"")
 
 set(CMAKE_EXE_LINKER_FLAGS "/machine:I386")

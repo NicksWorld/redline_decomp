@@ -10,6 +10,7 @@ extern class EngineState *g_EngineState;
 extern class StateTree *g_StateTree;
 extern class Keybinds *g_Keybinds;
 extern class Replay *g_Replay;
+extern class D3dRenderer * g_Direct3d;
 
 // GameData script
 extern void *g_GameData;

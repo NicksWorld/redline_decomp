@@ -589,11 +589,7 @@ StateNode *StateTree::Next(int dir) {
     return this->NodeById(this->cur_node);
 }
 
-// Intrinsic forced as it is implemented explicitly to require SEH
-// This almost certainly was originally a default impl, but for some reason
-// this helps?
-#pragma intrinsic(memcpy)
 // FUNCTION: REDLINE 0x00470F60
 StateNode::StateNode(const StateNode &other) {
-    memcpy((char *)this, &other, sizeof(StateNode));
+    *this = other;
 }

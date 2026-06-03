@@ -57,6 +57,9 @@ HANDLE g_MainThread;
 // GLOBAL: REDLINE 0x005ce600
 bool g_unkBool;
 
+// GLOBAL: REDLINE 0x005a7fd4
+class D3dRenderer* g_Direct3d;
+
 // FUNCTION: REDLINE 0x00551cd9
 BOOL RegisterWindowClass() {
     WNDCLASSEXA cl;

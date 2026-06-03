@@ -11,6 +11,13 @@ RUN wine wineboot
 RUN git clone https://seed.tty.garden/nmcdaniel/MSVC600
 RUN mv MSVC600 ~/.wine/drive_c/msvc
 
+# Remove problematic outdated ddraw library things
+RUN rm ~/.wine/drive_c/msvc/Include/DDRAW.H
+RUN rm ~/.wine/drive_c/msvc/Lib/DDRAW.LIB
+
+RUN git clone https://seed.tty.garden/nmcdaniel/DX6
+RUN mv DX6 ~/.wine/drive_c/dx6
+
 RUN wget https://github.com/Kitware/CMake/releases/download/v3.26.6/cmake-3.26.6-windows-i386.zip
 RUN unzip cmake-3.26.6-windows-i386.zip -d ~/.wine/drive_c
 RUN mv ~/.wine/drive_c/cmake-3.26.6-windows-i386 ~/.wine/drive_c/cmake

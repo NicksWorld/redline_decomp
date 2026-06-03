@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-wine reg ADD 'HKCU\Environment' /v PATH /d 'C:\msvc\bin;C:\msvc\msdev98\bin;C:\cmake\bin;C:\windows\system32' /f
-wine reg ADD 'HKCU\Environment' /v INCLUDE /d 'C:\msvc\include' /f
-wine reg ADD 'HKCU\Environment' /v LIB /d 'C:\msvc\lib' /f
+wine reg ADD 'HKCU\Environment' /v PATH /d 'C:\msvc\bin;C:\dx6\bin;C:\msvc\msdev98\bin;C:\cmake\bin;C:\windows\system32' /f
+wine reg ADD 'HKCU\Environment' /v INCLUDE /d 'C:\dx6\include;C:\msvc\include' /f
+wine reg ADD 'HKCU\Environment' /v LIB /d 'C:\dx6\lib;C:\msvc\lib' /f
 wine reg ADD 'HKCU\Environment' /v TMP /d 'Z:\build' /f
 wine reg ADD 'HKCU\Environment' /v TEMP /d 'Z:\build' /f
 

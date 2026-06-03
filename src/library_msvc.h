@@ -114,4 +114,7 @@
 // LIBRARY: REDLINE 0x00574b80
 // _strcat
 
+// LIBRARY: REDLINE 0x00576934
+// _iswdigit
+
 #endif
