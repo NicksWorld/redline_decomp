@@ -31,13 +31,15 @@ class PackFile {
     int FilenameToExtension(const char* name);
     void PopulateIndex();
     int Find(const char* name);
-    int Get(const char* name, FileContainer* container, int flags);
+    int Get(const char* name, char** buffer, int flags);
+    int Next(const char* ext, int start_idx);
+    void EntryName(int idx, char* out);
 };
 
 class PackIndex {
     public:
     PackFile* pack;
-    int base_entry_idx;
+    unsigned int base_entry_idx;
 };
 
 class AssetManager {
@@ -45,7 +47,14 @@ class AssetManager {
     PackIndex* packs;
     public:
     int ReadPack(const char* name);
-    int Get(const char* name, FileContainer* container, int to_read);
+    int Get(const char* name, char** buffer, int to_read);
+    int GetEntryIdx(const char* name);
+    int EntrySize(unsigned int idx);
+    int EntryTimestamp(unsigned int idx);
+
+    int Next(const char* ext, unsigned int idx);
+    void EntryName(unsigned int idx, char* out);
 };
 
 bool LoadPack(const char* name, int unk1, int unk2);
+bool AssetInfo(const char* name, int* timestamp, int* size);

@@ -18,4 +18,6 @@ class FileContainer {
     int ReadOpen(const char* name);
     int ReadFile(const char* name);
     int ReadAsset(const char* name);
+
+    int Read(const char* name, char* buf, int size);
 };

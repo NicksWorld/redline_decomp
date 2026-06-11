@@ -94,7 +94,9 @@ class Renderer {
     short unk;
     unsigned int flags;
     DisplayModes* display_modes;
-    char pad1[52];
+    char pad1[44];
+    int origin_screen_x;
+    int origin_screen_y;
 
     unsigned int vram_total;
     unsigned int vram_free;
@@ -149,6 +151,8 @@ class D3dRenderer : public Renderer {
     short DeviceModeCount(short idx);
     short DeviceModeResolution(short idx, short mode, short* width, short* height, short* bpp);
     short SupportsBitDepth(short dev, short bpp);
+
+    int SetWindowOrigin(int screen_x, int screen_y);
 };
 
 int DeviceCount();
@@ -162,5 +166,7 @@ short SupportsBitDepth(short dev, short bpp);
 
 short FormatResolution(short dev, short mode, char* out);
 short ResolutionToMode(short dev, short width, short height, short bpp);
+
+void SetWindowOrigin(int screen_x, int screen_y);
 
 short BestDevice();

@@ -99,14 +99,36 @@ int FileContainer::ReadAsset(const char* name){
         this->stream->read(this->data, this->size);
         this->stream->close();
     } else {
-        this->size = g_Assets.Get(name, this, 0);
+        this->size = g_Assets.Get(name, &this->data, 0);
         if (this->size == 0) {
-            g_Log.Debug("No asset found");
             return 0;
         }
         this->unk3 = 0;
     }
 
     this->unk1 = 0;
+    return true;
+}
+
+// FUNCTION: REDLINE 0x00417709
+int FileContainer::Read(const char* name, char* buf, int size) {
+    int asset_size;
+    int timestamp;
+    if (!AssetInfo(name, &timestamp, &asset_size))
+        return false;
+    // FIXME: This was likely a mistake in the original
+    if (size > timestamp)
+        return false;
+
+    if (g_unk == 0) {
+        if (!this->ReadOpen(name))
+            return false;
+        this->stream->read(buf, size);
+        this->stream->close();
+    } else {
+        if (!g_Assets.Get(name, &buf, size))
+            return false;
+    }
+    this->Clear();
     return true;
 }

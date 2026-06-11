@@ -97,137 +97,153 @@ struct ScriptArray2 {
     short count;
 };
 
-// This functions, but is *far* from matching
 // FUNCTION: REDLINE 0x0052dba9
 bool ScriptManager::Read(char* buffer) {
+    struct Locals {
+        ScriptArray* arr;
+        ScriptArray* arr2;
+        ScriptArray2* arr3;
+        ScriptArray2* arr4;
+        ScriptArray* arr5;
+        ScriptArray* arr6;
+        ScriptArray* arr7;
+        short desc_idx;
+        char _pad1[2];
+        short sect_idx;
+        char _pad2[2];
+        char* scripts;
+        char* data;
+        short section_count;
+        char _pad3[2];
+        short idx;
+        char _pad4[2];
+        short section_id;
+        char _pad5[2];
+        short stride;
+        char _pad6[2];
+        int version;
+    } l;
     this->Clear();
     this->raw = buffer;
-    short idx;
-    for (idx = 0; idx < 0x27; ++idx) {
-        this->sections[idx].descriptor_count = 0;
-        this->sections[idx].entry_count = 0;
-        this->sections[idx].scripts = NULL;
-        this->sections[idx].descriptors = NULL;
+    for (l.idx = 0; l.idx < 0x27; ++l.idx) {
+        this->sections[l.idx].descriptor_count = 0;
+        this->sections[l.idx].entry_count = 0;
+        this->sections[l.idx].scripts = NULL;
+        this->sections[l.idx].descriptors = NULL;
     }
-    char* raw = this->raw + 4;
-    int version = *(int*)raw;
-    if (version < 3) {
+    l.data = this->raw + 4;
+    l.version = *(int*)l.data;
+    if (l.version < 3) {
         g_Log.Debug("**ERROR - script file version not supported - get new file from server!");
         return false;
     }
-    raw += 4;
-    short section_count = *(short*)raw;
-    char* data = raw + 4;
-    for (idx = 0; idx < section_count; ++idx) {
-        short section_id = *(short*)(data);
-        data += 2;
-        section_id = *(short*)(data);
-        data += 2;
-        short stride = *(short*)data;
-        data += 2;
-        this->sections[section_id].descriptor_count = *(short*)(data);
-        data += 2;
-        this->sections[section_id].descriptors = (ScriptDescriptor*)data;
-        data += this->sections[section_id].descriptor_count * stride;
-        this->sections[section_id].entry_len = *(short*)data;
-        data += 2;
-        this->sections[section_id].entry_count = *(short*)data;
-        data += 2;
-        this->sections[section_id].scripts = data;
-
-        short i;
-        for (i = 0; i < 39; ++i) {
-            if (g_ScriptSizes[i][0] == section_id) {
-                if (g_ScriptSizes[i][1] != this->sections[section_id].entry_len) {
+    l.data += 4;
+    l.section_count = *(short*)l.data;
+    l.data = l.data + 4;
+    for (l.idx = 0; l.idx < l.section_count; ++l.idx) {
+        l.section_id = *(short*)(l.data);
+        l.data += 2;
+        l.section_id = *(short*)(l.data);
+        l.data += 2;
+        l.stride = *(short*)l.data;
+        l.data += 2;
+        this->sections[l.section_id].descriptor_count = *(short*)l.data;
+        l.data += 2;
+        this->sections[l.section_id].descriptors = (ScriptDescriptor*)l.data;
+        l.data += l.stride * this->sections[l.section_id].descriptor_count;
+        this->sections[l.section_id].entry_len = *(short*)l.data;
+        l.data += 2;
+        this->sections[l.section_id].entry_count = *(short*)l.data;
+        l.data += 2;
+        this->sections[l.section_id].scripts = l.data;
+        for (l.sect_idx = 0; l.sect_idx < 39; ++l.sect_idx) {
+            if (g_ScriptSizes[l.sect_idx][0] == l.section_id) {
+                if (g_ScriptSizes[l.sect_idx][1] != this->sections[l.section_id].entry_len) {
                     g_Log.Debug("**ERROR - script file indicates a different size for a script category!");
                     return false;
                 }
                 break;
             }
         }
-        if (i >= 39) {
+        if (l.sect_idx >= 39) {
             g_Log.Debug("**ERROR - no size entry in script structure size table that match");
             return false;
         }
-        char* scripts = (char*)this->sections[section_id].scripts;
-        data += this->sections[section_id].entry_len * this->sections[section_id].entry_count;
-        for (short s = 0; s < this->sections[section_id].entry_count; ++s) {
-            *(short*)(scripts + 16) = 0;
-            for (short d = 0; d < this->sections[section_id].descriptor_count; ++d) {
-                ScriptArray* arr;
-                ScriptArray2* arr2;
-                switch (this->sections[section_id].descriptors[d].kind) {
-                    case 0xC:
-                        arr = (ScriptArray*)(scripts + this->sections[section_id].descriptors[d].offset);
-                        if (arr->count <= 0) {
-                            arr->arr = NULL;
+        l.scripts = (char*)this->sections[l.section_id].scripts;
+        l.data += this->sections[l.section_id].entry_count * this->sections[l.section_id].entry_len;
+        for ( l.sect_idx = 0; l.sect_idx < this->sections[l.section_id].entry_count; ++l.sect_idx) {
+            *(short*)(l.scripts + 16) = 0;
+            for ( l.desc_idx = 0; l.desc_idx < this->sections[l.section_id].descriptor_count; ++l.desc_idx) {
+                switch (this->sections[l.section_id].descriptors[l.desc_idx].kind) {
+                    case 0x19:
+                        l.arr7 = (ScriptArray*)(l.scripts + this->sections[l.section_id].descriptors[l.desc_idx].offset);
+                        if (l.arr7->count > 0) {
+                            l.arr7->arr = l.data;
+                            l.data += 152 * l.arr7->count;
                         } else {
-                            arr->arr = data;
-                            data += 20 * arr->count;
-                        }
-                        break;
-                    case 0xD: // Float array
-                        arr = (ScriptArray*)(scripts + this->sections[section_id].descriptors[d].offset);
-                        if (arr->count <= 0) {
-                            arr->arr = NULL;
-                        } else {
-                            arr->arr = data;
-                            data += 4 * arr->count;
-                            if (((float*)arr->arr)[arr->count - 1] == 999.9) {
-                                arr->count -= 1;
-                            }
-                        }
-                        break;
-                    case 0xE:
-                        arr = (ScriptArray*)(scripts + this->sections[section_id].descriptors[d].offset);
-                        if (arr->count <= 0) {
-                            arr->arr = NULL;
-                        } else {
-                            arr->arr = data;
-                            data += 12 * arr->count;
-                        }
-                        break;
-                    case 0xF:
-                        arr2 = (ScriptArray2*)(scripts + this->sections[section_id].descriptors[d].offset);
-                        if (arr2->count <= 0) {
-                            arr2->arr = NULL;
-                        } else {
-                            arr2->arr = data;
-                            data += 32 * arr2->count;
-                        }
-                        break;
-                    case 0x10:
-                        arr2 = (ScriptArray2*)(scripts + this->sections[section_id].descriptors[d].offset);
-                        if (arr2->count <= 0) {
-                            arr2->arr = NULL;
-                        } else {
-                            arr2->arr = data;
-                            data += 16 * arr2->count;
+                            l.arr7->arr = NULL;
                         }
                         break;
                     case 0x17:
-                        arr = (ScriptArray*)(scripts + this->sections[section_id].descriptors[d].offset);
-                        if (arr->count <= 0) {
-                            arr->arr = NULL;
+                        l.arr6 = (ScriptArray*)(l.scripts + this->sections[l.section_id].descriptors[l.desc_idx].offset);
+                        if (l.arr6->count > 0) {
+                            l.arr6->arr = l.data;
+                            l.data += 40 * l.arr6->count;
                         } else {
-                            arr->arr = data;
-                            data += 40 * arr->count;
+                            l.arr6->arr = NULL;
                         }
                         break;
-                    case 0x19:
-                        arr = (ScriptArray*)(scripts + this->sections[section_id].descriptors[d].offset);
-                        if (arr->count <= 0) {
-                            arr->arr = NULL;
+                    case 0xE:
+                        l.arr5 = (ScriptArray*)(l.scripts + this->sections[l.section_id].descriptors[l.desc_idx].offset);
+                        if (l.arr5->count > 0) {
+                            l.arr5->arr = l.data;
+                            l.data += 12 * l.arr5->count;
                         } else {
-                            arr->arr = data;
-                            data += 152 * arr->count;
+                            l.arr5->arr = NULL;
                         }
                         break;
-                    default:
-                        continue;
+                    case 0x10:
+                        l.arr4 = (ScriptArray2*)(l.scripts + this->sections[l.section_id].descriptors[l.desc_idx].offset);
+                        if (l.arr4->count > 0) {
+                            l.arr4->arr = l.data;
+                            l.data += 16 * l.arr4->count;
+                        } else {
+                            l.arr4->arr = NULL;
+                        }
+                        break;
+                    case 0xF:
+                        l.arr3 = (ScriptArray2*)(l.scripts + this->sections[l.section_id].descriptors[l.desc_idx].offset);
+                        if (l.arr3->count > 0) {
+                            l.arr3->arr = l.data;
+                            l.data += 32 * l.arr3->count;
+                        } else {
+                            l.arr3->arr = NULL;
+                        }
+                        break;
+                    case 0xC:
+                        l.arr2 = (ScriptArray*)(l.scripts + this->sections[l.section_id].descriptors[l.desc_idx].offset);
+                        if (l.arr2->count > 0) {
+                            l.arr2->arr = l.data;
+                            l.data += 20 * l.arr2->count;
+                        } else {
+                            l.arr2->arr = NULL;
+                        }
+                        break;
+                    case 0xD: // Float array
+                        l.arr = (ScriptArray*)(l.scripts + this->sections[l.section_id].descriptors[l.desc_idx].offset);
+                        if (l.arr->count > 0) {
+                            l.arr->arr = l.data;
+                            l.data += 4 * l.arr->count;
+                            if (((float*)l.arr->arr)[l.arr->count - 1] == 999.9) {
+                                l.arr->count -= 1;
+                            }
+                        } else {
+                            l.arr->arr = NULL;
+                        }
+                        break;
                 }
             }
-            scripts += this->sections[section_id].entry_len;
+            l.scripts += this->sections[l.section_id].entry_len;
         }
     }
 

@@ -11,44 +11,42 @@ int g_protection = 0x1a4;
 // Stack is a bit scrambled, and inlining isn't applying on ofstream methods
 // FUNCTION: REDLINE 0x004a8e90
 void Log::Open(const char *filename, int truncate) {
-    int flags;
-    ofstream *ostream;
+    struct Locals {
+        char msg[128];
+        ofstream *ostream;
+        time_t time_base;
+        struct tm *time;
+        int flags;
+    } l;
+
     if (filename != NULL && strlen(filename) != 0 && strlen(filename) < 0x100) {
         strcpy(this->filename, filename);
-
-        ostream = NULL;
-        flags = ios::out | ios::binary;
+        l.ostream = NULL;
+        l.flags = ios::out | ios::binary;
         if (truncate != 0) {
-            flags |= ios::trunc;
+            l.flags |= ios::trunc;
         } else {
-            flags |= ios::app;
+            l.flags |= ios::app;
         }
-
-        ostream = new ofstream(filename, flags, g_protection);
-        if (ostream == NULL)
+        l.ostream = new ofstream(filename, l.flags, g_protection);
+        if (l.ostream == NULL)
             goto cleanup;
-        if (ostream->fail() == 2) {
+        if (l.ostream->fail() == 2) {
             goto cleanup;
         }
 
         this->unk = 0;
-        time_t time_base;
-        time(&time_base);
-        struct tm *time;
-        time = localtime(&time_base);
-
-        char msg[128];
-        strcpy(msg, asctime(time));
-
-        if (strlen(msg) > 2) {
-            msg[strlen(msg) - 1] = '\0';
+        time(&l.time_base);
+        l.time = localtime(&l.time_base);
+        strcpy(l.msg, asctime(l.time));
+        if (strlen(l.msg) > 2) {
+            l.msg[strlen(l.msg) - 1] = '\0';
         }
-
-        *ostream << "// Program started on " << msg << "\r\n";
-    cleanup:
-        if (ostream != NULL) {
-            delete ostream;
-            ostream = NULL;
+        *l.ostream << "// Program started on " << l.msg << "\r\n";
+cleanup:
+        if (l.ostream != NULL) {
+            delete l.ostream;
+            l.ostream = NULL;
         }
     }
 }
@@ -90,7 +88,7 @@ void Log::DxErr(const char *msg, int err) {
     this->Debug(buf);
 }
 
-// // FUNCTION: REDLINE 0x004A9802
+// FUNCTION: REDLINE 0x004A9802
 void Log::D3dErr(const char *msg, int err) {
     char err_name[256];
     char buf[256];

@@ -5,17 +5,21 @@
 
 // FUNCTION: REDLINE 0x0052AE13
 bool WriteRegistry(const char *key, const char *out) {
-    char key_class[12];
-    ULONG disposition;
+    struct Locals {
+        HKEY reg;
+        char key_class[12];
+        LONG status;
+        ULONG disposition;
+    } l;
 
-    HKEY reg = NULL;
-    LONG status =
-        RegCreateKeyExA(HKEY_LOCAL_MACHINE, g_registryKey, 0, key_class, 0,
-                        0xF003F, NULL, &reg, &disposition);
-    if (!status) {
-        status = RegSetValueExA(reg, key, 0, 1, (unsigned char *)out, strlen(out) + 2);
-        if (!status) {
-            RegCloseKey(reg);
+    l.reg = NULL;
+    l.status =
+        RegCreateKeyExA(HKEY_LOCAL_MACHINE, g_registryKey, 0, l.key_class, 0,
+                        0xF003F, NULL, &l.reg, &l.disposition);
+    if (!l.status) {
+        l.status = RegSetValueExA(l.reg, key, 0, 1, (unsigned char *)out, strlen(out) + 2);
+        if (!l.status) {
+            RegCloseKey(l.reg);
             return true;
         }
     }

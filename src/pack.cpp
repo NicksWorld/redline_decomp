@@ -184,15 +184,15 @@ int PackFile::Find(const char* name) {
 }
 
 // FUNCTION: REDLINE 0x00500ff9
-int PackFile::Get(const char* name, FileContainer* container, int to_read) {
+int PackFile::Get(const char* name, char** buffer, int to_read) {
     int entry_idx = this->Find(name);
     if (entry_idx == -1) return 0;
 
     int entry_size = this->entries[entry_idx].size;
     if (to_read == 0) {
-        container->data = new char[entry_size + 1]();
+        *buffer = new char[entry_size + 1]();
     }
-    if (container == NULL) return 0;
+    if (buffer == NULL) return 0;
 
     ifstream* stream = new ifstream(this->filename, ios::binary | ios::nocreate, g_protection);
     if (stream == NULL || stream->fail() == ios::failbit) {
@@ -203,9 +203,9 @@ int PackFile::Get(const char* name, FileContainer* container, int to_read) {
     }
     stream->seekg(this->entries[entry_idx].file_off, ios::beg);
     if (to_read > 0) {
-        stream->read((char*)container->data, to_read);
+        stream->read(*buffer, to_read);
     } else {
-        stream->read((char*)container->data, entry_size);
+        stream->read(*buffer, entry_size);
     }
     delete stream;
 
@@ -229,15 +229,111 @@ int PackFile::FilenameToExtension(const char* name) {
     }
 }
 
+// FUNCTION: REDLINE 0x005011CD
+int PackFile::Next(const char* ext, int start_idx) {
+    for (unsigned int i = start_idx; i < this->entry_count; ++i) {
+        char* dot = strrchr(this->entries[i].name, '.');
+        if (dot && !strcmpi(dot + 1, ext))
+            return i;
+    }
+    return -1;
+}
+
+// FUNCTION: REDLINE 0x00501355
+void PackFile::EntryName(int idx, char* out) {
+    strcpy(out, this->entries[idx].name);
+}
+
 // FUNCTION: REDLINE 0x004aac77
-int AssetManager::Get(const char* name, FileContainer* container, int to_read) {
+int AssetManager::Get(const char* name, char** buffer, int to_read) {
     int read = -1;
     for (unsigned int i = 0; i < this->pack_count; ++i) {
-        read = this->packs[i].pack->Get(name, container, to_read);
+        read = this->packs[i].pack->Get(name, buffer, to_read);
         if (read > 0)
             break;
     }
     return read;
+}
+
+// FUNCTION: REDLINE 0x004AACD6
+int AssetManager::GetEntryIdx(const char* name) {
+    int entry_idx = -1;
+    for (unsigned int i = 0; i < this->pack_count; ++i) {
+        entry_idx = this->packs[i].pack->Find(name);
+        if (entry_idx >= 0) {
+            entry_idx += this->packs[i].base_entry_idx;
+            break;
+        }
+    }
+    return entry_idx;
+}
+
+// FUNCTION: REDLINE 0x004AAD40
+int AssetManager::EntrySize(unsigned int idx) {
+    if (!this->pack_count)
+        return -1;
+    unsigned int pack_idx = 0;
+    for (pack_idx = 0; pack_idx < this->pack_count - 1; ++pack_idx) {
+        if (idx < this->packs[pack_idx + 1].base_entry_idx) {
+            break;
+        }
+    }
+
+    int size = this->packs[pack_idx].pack->entries[idx - this->packs[pack_idx].base_entry_idx].size;
+    return size;
+}
+
+// FUNCTION: REDLINE 0x004AADC9
+int AssetManager::EntryTimestamp(unsigned int idx) {
+    if (!this->pack_count)
+        return -1;
+    unsigned int pack_idx = 0;
+    for (pack_idx = 0; pack_idx < this->pack_count - 1; ++pack_idx) {
+        if (idx < this->packs[pack_idx + 1].base_entry_idx) {
+            break;
+        }
+    }
+
+    int timestamp = this->packs[pack_idx].pack->entries[idx - this->packs[pack_idx].base_entry_idx].timestamp;
+    return timestamp;
+}
+
+// FUNCTION: REDLINE 0x004AAECD
+int AssetManager::Next(const char* ext, unsigned int idx) {
+    if (!this->pack_count)
+        return -1;
+    unsigned int pack_file = 0;
+    for (pack_file = 0; pack_file < this->pack_count - 1; pack_file++) {
+        if (idx < this->packs[pack_file + 1].base_entry_idx)
+            break;
+    }
+
+    int i = idx - this->packs[pack_file].base_entry_idx;
+    while (true) {
+        i = this->packs[pack_file].pack->Next(ext, i);
+        if (i >= 0) {
+            i += this->packs[pack_file].base_entry_idx;
+            break;
+        }
+        pack_file++;
+        if (pack_file >= this->pack_count)
+            break;
+        i = 0;
+    }
+
+    return i;
+}
+
+// FUNCTION: REDLINE 0x004AAE52
+void AssetManager::EntryName(unsigned int idx, char* out) {
+    if (!this->pack_count)
+        return;
+    unsigned int pack_file = 0;
+    for (pack_file = 0; pack_file < this->pack_count - 1; pack_file++) {
+        if (idx < this->packs[pack_file + 1].base_entry_idx)
+            break;
+    }
+    this->packs[pack_file].pack->EntryName(idx - this->packs[pack_file].base_entry_idx, out);
 }
 
 // FUNCTION: REDLINE 0x004aaae5
@@ -297,4 +393,29 @@ bool LoadPack(const char* name, int unk1, int unk2) {
     }
 
     return true;
+}
+
+// FUNCTION: REDLINE 0x00417A7E
+bool AssetInfo(const char* name, int* timestamp, int* size) {
+    *timestamp = 0;
+    *size = 0;
+    bool res = false;
+    if (g_unk == 0) {
+        struct _stat st;
+        int stat_res = _stat(name, &st);
+        if (stat_res == 0) {
+            // FIXME: This is backwards in the original
+            *size = st.st_mtime;
+            *timestamp = st.st_size;
+            res = true;
+        }
+    } else {
+        int idx = g_Assets.GetEntryIdx(name);
+        if (idx >= 0) {
+            *size = g_Assets.EntrySize(idx);
+            *timestamp = g_Assets.EntryTimestamp(idx);
+            res = true;
+        }
+    }
+    return res;
 }

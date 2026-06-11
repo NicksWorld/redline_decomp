@@ -26,6 +26,7 @@ add_executable(redline WIN32
     # Game state methods
     src/state/none.cpp
     src/state/debug.cpp
+    src/state/av.cpp
     src/state/shutdown.cpp
 
     res/redline.rc

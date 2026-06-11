@@ -87,6 +87,8 @@ class Config {
     Value* GetValue(const char* name);
     int StoreValue(Value* v);
     int SetStringValue(const char* key, const char* val);
+    int SetBoolValue(const char* key, bool v);
+    int SetIntValue(const char* key, int v);
 
     int GetIntValue(const char* name, int* out);
     int GetFloatValue(const char* name, float* out);

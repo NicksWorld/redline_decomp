@@ -12,8 +12,12 @@ extern class Keybinds *g_Keybinds;
 extern class Replay *g_Replay;
 extern class D3dRenderer * g_Direct3d;
 
-// GameData script
-extern void *g_GameData;
+// GameData script (rough, sizing wrong)
+struct GameData {
+    char pad[18];
+    char data_dir[64]; // Probably wrong size, and has following fields
+};
+extern GameData *g_GameData;
 
 extern HINSTANCE g_hInstance;
 extern int g_nCmdShow;
@@ -45,6 +49,11 @@ extern bool g_LobbyEnabled;
 
 
 extern bool g_unkBool;
+
+extern int g_WindowCreated;
+extern int g_WindowActive;
+
+extern bool g_PublicGame;
 
 #define GLOBAL_STRING_SIZE 128
 // Configurable Values

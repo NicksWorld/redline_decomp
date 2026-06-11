@@ -8,6 +8,7 @@
 
 #include "state/none.h"
 #include "state/debug.h"
+#include "state/av.h"
 #include "state/shutdown.h"
 
 #define STATE_STUB(STATE_STUB_NAME)                                            \
@@ -99,7 +100,7 @@ bool EngineState::SetupStates() {
 
     this->states[STATE_INIT_AV]->event_tick = EventTickStub;
     this->states[STATE_INIT_AV]->tick = TickStub;
-    this->states[STATE_INIT_AV]->init = InitStub;
+    this->states[STATE_INIT_AV]->init = StateImpl::AV::Init;
     this->states[STATE_INIT_AV]->shutdown = ShutdownStub;
     this->states[STATE_INIT_AV]->flag = false;
 
@@ -470,7 +471,7 @@ void StateTree::PopulateNodes() {
     node.id = 0;
     node.a = 1;
     node.b = 0;
-    node.state_id = 0;
+    node.state_id = 13;
     strcpy(node.name, "");
     this->AddNode(&node);
     node.id = 1;
@@ -581,10 +582,13 @@ StateNode *StateTree::Next(int dir) {
     if (cur == NULL) {
         return NULL;
     }
-    if (dir == 1) {
-        this->cur_node = cur->a;
-    } else {
-        this->cur_node = cur->b;
+    switch (dir) {
+        case 1:
+            this->cur_node = cur->a;
+            break;
+        default:
+            this->cur_node = cur->b;
+            break;
     }
     return this->NodeById(this->cur_node);
 }

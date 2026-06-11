@@ -60,12 +60,23 @@ Config::Config() {
 
 // FUNCTION: REDLINE 0x00440517
 int Config::ParseMapping(char *mapping) {
-    bool car = false;
-    int action = -1;
-    int joyhat = action;
-    int joybutton = joyhat;
-    int mbutton = joybutton;
-    int key = mbutton;
+    struct Locals {
+        int key;
+        int action;
+        char buf[128];
+        int buf_idx;
+        int i;
+        int joybutton;
+        int joyhat;
+        int mbutton;
+        bool car;
+    } l;
+    l.car = false;
+    l.action = -1;
+    l.joyhat = l.action;
+    l.joybutton = l.joyhat;
+    l.mbutton = l.joybutton;
+    l.key = l.mbutton;
 
     // Skip whitespace
     while (isspace(*mapping) && *mapping != NULL)
@@ -75,78 +86,71 @@ int Config::ParseMapping(char *mapping) {
 
     if (mapping[0] == 'c' && mapping[1] == 'a' && mapping[2] == 'r') {
         mapping += 3;
-        car = true;
+        l.car = true;
         while (isspace(*mapping) && *mapping != NULL)
             ++mapping;
     }
 
-    char buf[128];
-    int i;
 
     // Copy remaining line
-    for (i = 0; i < 127; ++i) {
-        if (isspace(mapping[i]))
+    for (l.i = 0; l.i < 127; ++l.i) {
+        if (isspace(mapping[l.i]))
             break;
-        buf[i] = mapping[i];
+        l.buf[l.i] = mapping[l.i];
     }
-    if (i == 127)
+    if (l.i == 127)
         return -1;
-    buf[i] = 0;
-
-    key = LookupKeyname(buf);
-    if (key < 0) {
-        strlwr(buf);
-        mbutton = LookupMbuttonName(buf);
-        if (mbutton < 0) {
-            strlwr(buf);
-            joybutton = LookupJoybuttonName(buf);
-            if (joybutton < 0) {
-                strlwr(buf);
-                joyhat = LookupJoyhatName(buf);
+    l.buf[l.i] = 0;
+    l.key = LookupKeyname(l.buf);
+    if (l.key < 0) {
+        strlwr(l.buf);
+        l.mbutton = LookupMbuttonName(l.buf);
+        if (l.mbutton < 0) {
+            strlwr(l.buf);
+            l.joybutton = LookupJoybuttonName(l.buf);
+            if (l.joybutton < 0) {
+                strlwr(l.buf);
+                l.joyhat = LookupJoyhatName(l.buf);
             }
         }
     }
-    if (key < 0 && mbutton < 0 && joybutton < 0 && joyhat < 0)
+    if (l.key < 0 && l.mbutton < 0 && l.joybutton < 0 && l.joyhat < 0)
         return -1;
-
-    while (isspace(mapping[i]) && i < 127)
-        ++i;
-    if (i == 127)
+    while (isspace(mapping[l.i]) && l.i < 127)
+        ++l.i;
+    if (l.i == 127)
         return -1;
 
     // Copy action name into buf
-    int buf_idx;
-    for (buf_idx = 0; i < 127; ++i, ++buf_idx) {
-        if (isspace(mapping[i]) || mapping[i] == NULL)
+    for (l.buf_idx = 0; l.i < 127; ++l.i, ++l.buf_idx) {
+        if (isspace(mapping[l.i]) || mapping[l.i] == NULL)
             break;
-        buf[buf_idx] = mapping[i];
+        l.buf[l.buf_idx] = mapping[l.i];
     }
-    buf[buf_idx] = 0;
-
-    action = LookupActionName(buf);
-    if (action < 0)
+    l.buf[l.buf_idx] = 0;
+    l.action = LookupActionName(l.buf);
+    if (l.action < 0)
         return -1;
-
-    if (key >= 0) {
-        if (car)
-            this->keybinds_car[key] = action;
+    if (l.key >= 0) {
+        if (l.car)
+            this->keybinds_car[l.key] = l.action;
         else
-            this->keybinds_foot[key] = action;
-    } else if (mbutton >= 0) {
-        if (car)
-            this->mousebinds_car[mbutton] = action;
+            this->keybinds_foot[l.key] = l.action;
+    } else if (l.mbutton >= 0) {
+        if (l.car)
+            this->mousebinds_car[l.mbutton] = l.action;
         else
-            this->mousebinds_foot[mbutton] = action;
-    } else if (joybutton >= 0) {
-        if (car)
-            this->joybinds_car[joybutton] = action;
+            this->mousebinds_foot[l.mbutton] = l.action;
+    } else if (l.joybutton >= 0) {
+        if (l.car)
+            this->joybinds_car[l.joybutton] = l.action;
         else
-            this->joybinds_foot[joybutton] = action;
+            this->joybinds_foot[l.joybutton] = l.action;
     } else {
-        if (car)
-            this->jhatbinds_car[joyhat] = action;
+        if (l.car)
+            this->jhatbinds_car[l.joyhat] = l.action;
         else
-            this->jhatbinds_foot[joyhat] = action;
+            this->jhatbinds_foot[l.joyhat] = l.action;
     }
 
     return 0;
@@ -175,21 +179,24 @@ Value::~Value() {
 
 // FUNCTION: REDLINE 0x00440C9E
 Value *Config::GetValue(const char *name) {
-    char lower[64];
+    struct Locals {
+        int key;
+        Value *v;
+        char lower[64];
+    } l;
+
     if (name == NULL)
         return NULL;
-    strcpy(lower, name);
-    strlwr(lower);
-
-    int key = *lower;
-    Value *v = this->conf_values[key];
-    while (v != NULL) {
-        if (!strcmp(lower, v->name))
+    strcpy(l.lower, name);
+    strlwr(l.lower);
+    l.key = *l.lower;
+    l.v = this->conf_values[l.key];
+    while (l.v != NULL) {
+        if (!strcmp(l.lower, l.v->name))
             break;
-        v = v->next;
+        l.v = l.v->next;
     }
-
-    return v;
+    return l.v;
 }
 
 // FUNCTION: REDLINE 0x00440c42
@@ -204,6 +211,61 @@ int Config::StoreValue(Value *v) {
         v->next = NULL;
     this->conf_values[i] = v;
     return 0;
+}
+
+// FUNCTION: REDLINE 0x0043F86D
+int Config::SetBoolValue(const char* key, bool value) {
+    bool is_new = false;
+    if (!key)
+        return -1;
+    Value *val = this->GetValue(key);
+    if (!val) {
+        val = new Value();
+        strcpy(val->name, key);
+        strlwr(val->name);
+        val->kind = VALUE_INTBOOL;
+        is_new = true;
+    } else {
+        if (val->kind && val->kind != VALUE_INTBOOL && val->kind != VALUE_CHARBOOL)
+            return -1;
+    }
+    val->value.integer = value != false;
+    int res = 0;
+    if (is_new) {
+        res = this->StoreValue(val);
+        if (res != 0) {
+            delete val;
+        }
+    }
+    return res;
+}
+
+// FUNCTION: REDLINE 0x0043F716
+int Config::SetIntValue(const char* key, int value) {
+    bool is_new = false;
+    if (!key)
+        return -1;
+    Value *val = this->GetValue(key);
+    if (!val) {
+        val = new Value();
+        strcpy(val->name, key);
+        strlwr(val->name);
+        val->kind = VALUE_SIGNED;
+        is_new = true;
+    } else {
+        // FIXME: Shouldn't this verify it is VALUE_SIGNED, not a bool?
+        if (val->kind && val->kind != VALUE_INTBOOL && val->kind != VALUE_CHARBOOL)
+            return -1;
+    }
+    val->value.integer = value;
+    int res = 0;
+    if (is_new) {
+        res = this->StoreValue(val);
+        if (res != 0) {
+            delete val;
+        }
+    }
+    return res;
 }
 
 // FUNCTION: REDLINE 0x0043F460
@@ -281,102 +343,114 @@ int Config::GetBoolValue(const char *name, bool *out) {
     return 0;
 }
 
+// Intrinsic memcpy is to replicate initialization of seperators and line_endings
+// as if they weren't inside of a struct
+#pragma intrinsic(memcpy)
 // FUNCTION: REDLINE 0x004408BD
 int Config::ParseOther(char *line) {
-    int integer;
-    float decimal;
+    struct Locals {
+        int len;
+        char *after_dot;
+        int integer;
+        char *sep;
+        char *line_copy;
+        float decimal;
+        void *unk2;
+        char line_endings[5];
+        Value *v;
+        int kind;
+        char seperators[6];
+        char *line_end;
+    } l;
 
-    const char seperators[6] = " \b\r\t\n";
-    const char line_endings[5] = "\b\r\t\n"; // Note exclusion of space
+    memcpy(l.seperators, " \b\r\t\n", 6);
+    memcpy(l.line_endings, "\b\r\t\n", 5); // Note exclusion of space
 
-    int kind = -1;
+    l.kind = -1;
     while (isspace(*line) && *line != NULL)
         ++line;
     if (*line == NULL)
         return -1;
-
-    char *line_copy = strdup(line); // Needs freed
-    char *sep = strtok(line_copy, seperators);
-    if (sep == NULL) {
-        free(line_copy);
+    l.line_copy = strdup(line); // Needs freed
+    l.sep = strtok(l.line_copy, l.seperators);
+    if (l.sep == NULL) {
+        free(l.line_copy);
         return -1;
     }
     while (isspace(*line) && *line != NULL)
         ++line;
 
     if (*line == NULL) {
-        free(line_copy);
+        free(l.line_copy);
         return -1;
     }
-    char *line_end = strtok(NULL, line_endings);
-    if (line_end == NULL) {
-        free(line_copy);
+    l.line_end = strtok(NULL, l.line_endings);
+    if (l.line_end == NULL) {
+        free(l.line_copy);
         return -1;
     }
-    void *unk2 = NULL;
-    if (*line_end == '\'') {
-        kind = 2;
-        ++line_end;
-    } else if (strstr(line_end, ".")) {
-        char *after_dot = strstr(line_end, ".");
-        after_dot++;
-        unk2 = strstr(line_end, ".");
-        if (unk2 == NULL) {
-            decimal = (float)atof(line_end);
-            if (decimal != 0.0) {
-                kind = 1;
-            } else if (strstr(line_end, "0.0")) {
-                kind = 1;
+    l.unk2 = NULL;
+    if (*l.line_end == '\'') {
+        l.kind = 2;
+        ++l.line_end;
+    } else if (strstr(l.line_end, ".")) {
+        l.after_dot = strstr(l.line_end, ".");
+        l.after_dot++;
+        l.unk2 = strstr(l.line_end, ".");
+        if (l.unk2 == NULL) {
+            l.decimal = (float)atof(l.line_end);
+            if (l.decimal != 0.0) {
+                l.kind = 1;
+            } else if (strstr(l.line_end, "0.0")) {
+                l.kind = 1;
             }
         }
     }
-
-    if (kind < 0 && unk2 == NULL) {
-        integer = atol(line_end);
-        if (integer != 0) {
-            kind = 0;
-        } else if (*line_end == '0') {
-            kind = 0;
+    if (l.kind < 0 && l.unk2 == NULL) {
+        l.integer = atol(l.line_end);
+        if (l.integer != 0) {
+            l.kind = 0;
+        } else if (*l.line_end == '0') {
+            l.kind = 0;
         }
     }
-    if (kind == -1)
-        kind = 2;
-
-    Value *v = new Value();
+    if (l.kind == -1)
+        l.kind = 2;
+    l.v = new Value();
 
     // int v19 = -1;
-    if (strlen(sep) >= 32) {
-        strncpy(v->name, sep, 30);
-        v->name[31] = 0;
+    if (strlen(l.sep) >= 32) {
+        strncpy(l.v->name, l.sep, 30);
+        l.v->name[31] = 0;
     } else {
-        strcpy(v->name, sep);
+        strcpy(l.v->name, l.sep);
     }
     // TODO: switch
-    int len;
-    switch (kind) {
-    case 1:
-        v->value.decimal = decimal;
-        break;
-    case 0:
-    case 3:
-        v->value.integer = integer;
-        break;
-    case 2:
-        v->value.string = strdup(line_end);
-        len = strlen(v->value.string);
-        if (len > 0 && v->value.string[len - 1] == '\'')
-            v->value.string[len - 1] = 0;
-        break;
-    case -1:
-        free(line_copy);
-        return -1;
+    switch (l.kind) {
+        case 1:
+            l.v->value.decimal = l.decimal;
+            break;
+        case 0:
+        case 3:
+            l.v->value.integer = l.integer;
+            break;
+        case 2:
+            l.v->value.string = strdup(l.line_end);
+            l.len = strlen(l.v->value.string);
+            if (l.len > 0 && l.v->value.string[l.len - 1] == '\'')
+                l.v->value.string[l.len - 1] = 0;
+            break;
+        case -1:
+            free(l.line_copy);
+            return -1;
     }
-    v->kind = kind;
-    free(line_copy);
-    return this->StoreValue(v);
-    free(line_copy);
+    l.v->kind = l.kind;
+    free(l.line_copy);
+    return this->StoreValue(l.v);
+    free(l.line_copy);
     return -1;
 }
+#pragma function(memcpy)
 
 // FUNCTION: REDLINE 0x004403fe
 int Config::ParseLine(char *line) {
@@ -1147,64 +1221,65 @@ enum CmdlineOptions {
 
 // FUNCTION: REDLINE 0x00441149
 char *Config::TokenizeCmdline(char *cmdline, int *out_token, char *out_val) {
+    struct Locals {
+        int i;
+        bool quote;
+        char *cursor;
+        char buf[32];
+    } l;
     if (!cmdline || !*cmdline)
         return NULL;
-    char *cursor = cmdline;
-    while (*cursor != '+' && *cursor)
-        ++cursor;
-
-    if (*cursor == NULL) {
+    l.cursor = cmdline;
+    while (*l.cursor != '+' && *l.cursor)
+        ++l.cursor;
+    if (*l.cursor == NULL) {
         *out_token = CMD_UNK;
         return NULL;
     }
-
-    cursor++;
-    if (*cursor == NULL) {
+    l.cursor++;
+    if (*l.cursor == NULL) {
         *out_token = CMD_UNK;
         return NULL;
     }
-
-    int i = 0;
-    char buf[32];
-    while (!isspace(*cursor) && *cursor)
-        buf[i++] = *cursor++;
-    buf[i] = 0;
+    l.i = 0;
+    while (!isspace(*l.cursor) && *l.cursor)
+        l.buf[l.i++] = *l.cursor++;
+    l.buf[l.i] = 0;
 
     for (*out_token = 0; *out_token < CMD_UNK; ++*out_token) {
-        if (!strcmp(buf, g_CmdlineOptions[*out_token]))
+        if (!strcmp(l.buf, g_CmdlineOptions[*out_token]))
             break;
     }
 
     if (*out_token == CMD_UNK)
-        return cursor;
+        return l.cursor;
     if (*out_token == CMD_CONSOLE) {
         *out_val = NULL;
-        return cursor;
+        return l.cursor;
     }
     if (*out_token == CMD_LOBBY) {
         *out_val = NULL;
-        return cursor;
+        return l.cursor;
     }
-    while (isspace(*cursor) && *cursor)
-        ++cursor;
-    if (*cursor == NULL) {
+    while (isspace(*l.cursor) && *l.cursor)
+        ++l.cursor;
+    if (*l.cursor == NULL) {
         *out_token = CMD_UNK;
         return NULL;
     }
-
-    i = 0;
-    bool quote = false;
-    while ((!isspace(*cursor) || quote) && *cursor) {
-        if (*cursor == '"') {
-            quote = !quote;
-            ++cursor;
+    l.i = 0;
+    l.quote = false;
+    while ((!isspace(*l.cursor) || l.quote) && *l.cursor) {
+        if (*l.cursor == '"') {
+            l.quote = !l.quote;
+            ++l.cursor;
             continue;
         }
-        out_val[i++] = *cursor;
-        ++cursor;
+        out_val[l.i++] = *l.cursor;
+        ++l.cursor;
     }
-    out_val[i] = 0;
-    return cursor;
+    out_val[l.i] = 0;
+    return l.cursor;
 }
 
 // GLOBAL: REDLINE 0x005ce944
@@ -1219,18 +1294,22 @@ bool g_ConnectRelated2;
 
 // FUNCTION: REDLINE 0x00441365
 void Config::ProcessConnect(char *val) {
+    struct Locals {
+        char *c;
+        int i;
+    } l;
     g_ConnectRelated1 = true;
     g_ConnectRelated2 = false;
-    int i = 0;
-    for (char *c = val; *c; ++c) {
-        if (*c == ':') {
-            g_ConnectPort = (short)atol(c + 1);
+    l.i = 0;
+    for (l.c = val; *l.c; ++l.c) {
+        if (*l.c == ':') {
+            g_ConnectPort = (short)atol(l.c + 1);
             break;
         }
-        ++i;
+        ++l.i;
     }
-    strncpy(g_ConnectIP, val, i);
-    g_ConnectIP[i] = 0;
+    strncpy(g_ConnectIP, val, l.i);
+    g_ConnectIP[l.i] = 0;
 }
 
 // FUNCTION: REDLINE 0x00441439

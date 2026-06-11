@@ -234,9 +234,19 @@ unsigned int g_EnumDevicesFlags;
 
 // FUNCTION: REDLINE 0x004535BB
 int D3dRenderer::AddD3dDevice(GUID* guid, char* name, LPD3DDEVICEDESC desc, short unk) {
+    struct Locals {
+        int srcblend;
+        int dstblend;
+        short supports_blend2;
+        short unk2;
+        short supports_blend;
+        short unk3;
+        short score;
+    } l;
+
     memset(&this->device_thing[this->devices_inited].a[this->unk], 0, sizeof(DeviceMeta));
     strcpy(this->device_thing[this->devices_inited].a[this->unk].name, name);
-    
+
     if (this->device_thing[this->devices_inited].a[this->unk].guid) {
         delete this->device_thing[this->devices_inited].a[this->unk].guid;
         this->device_thing[this->devices_inited].a[this->unk].guid = NULL;
@@ -261,8 +271,7 @@ int D3dRenderer::AddD3dDevice(GUID* guid, char* name, LPD3DDEVICEDESC desc, shor
     if (desc->dwFlags | D3DDD_DEVICERENDERBITDEPTH) {
         this->device_thing[this->devices_inited].a[this->unk].render_bit_depth = desc->dwDeviceRenderBitDepth;
     }
-    
-    short score = 0;
+    l.score = 0;
     if (desc->dwFlags | D3DDD_DEVCAPS) {
         this->device_thing[this->devices_inited].a[this->unk].can_render_after_flip =
             (desc->dwDevCaps & D3DDEVCAPS_CANRENDERAFTERFLIP) != 0;
@@ -270,18 +279,18 @@ int D3dRenderer::AddD3dDevice(GUID* guid, char* name, LPD3DDEVICEDESC desc, shor
             (desc->dwDevCaps & D3DDEVCAPS_TEXTURENONLOCALVIDMEM) != 0;
         this->device_thing[this->devices_inited].a[this->unk].texture_vram =
             (desc->dwDevCaps & D3DDEVCAPS_TEXTUREVIDEOMEMORY) != 0;
-        score += (desc->dwDevCaps & D3DDEVCAPS_FLOATTLVERTEX) != 0;
+        l.score += (desc->dwDevCaps & D3DDEVCAPS_FLOATTLVERTEX) != 0;
     }
 
     this->device_thing[this->devices_inited].a[this->unk].max_blend_stages =
         desc->wMaxTextureBlendStages;
-    short supports_blend = 0;
-    short supports_blend2 = 0;
+    l.supports_blend = 0;
+    l.supports_blend2 = 0;
     if (desc->dwFlags | D3DDD_TRICAPS) {
         this->device_thing[this->devices_inited].a[this->unk].has_linearmiplinear =
-            (desc->dpcTriCaps.dwTextureFilterCaps & D3DFILTER_LINEARMIPLINEAR) != 0;
+            (desc->dpcTriCaps.dwTextureFilterCaps & D3DPTFILTERCAPS_LINEARMIPLINEAR) != 0;
         this->device_thing[this->devices_inited].a[this->unk].aa_edges =
-        (desc->dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_ANTIALIASEDGES) != 0;
+            (desc->dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_ANTIALIASEDGES) != 0;
         this->device_thing[this->devices_inited].a[this->unk].aa_sortdependent =
             (desc->dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_ANTIALIASSORTDEPENDENT) != 0;
         this->device_thing[this->devices_inited].a[this->unk].aa_sortindependent =
@@ -305,30 +314,26 @@ int D3dRenderer::AddD3dDevice(GUID* guid, char* name, LPD3DDEVICEDESC desc, shor
         this->device_thing[this->devices_inited].a[this->unk].tex_squareonly =
             (desc->dpcTriCaps.dwTextureCaps & D3DPTEXTURECAPS_SQUAREONLY) != 0;
         this->device_thing[this->devices_inited].a[this->unk].tex_pow2 =
-            (desc->dpcTriCaps.dwRasterCaps & D3DPTEXTURECAPS_POW2) != 0;
+            (desc->dpcTriCaps.dwTextureCaps & D3DPTEXTURECAPS_POW2) != 0;
 
         this->device_thing[this->devices_inited].a[this->unk].tex_blend_caps =
             desc->dpcTriCaps.dwTextureBlendCaps;
         this->device_thing[this->devices_inited].a[this->unk].src_blend_caps =
             desc->dpcTriCaps.dwSrcBlendCaps;
-
-        int srcblend = this->device_thing[this->devices_inited].a[this->unk].src_blend_caps;
+        l.srcblend = this->device_thing[this->devices_inited].a[this->unk].src_blend_caps;
         this->device_thing[this->devices_inited].a[this->unk].dst_blend_caps =
             desc->dpcTriCaps.dwDestBlendCaps;
-        
-        if ((srcblend & D3DPBLENDCAPS_ONE) != 0
-                && (this->device_thing[this->devices_inited].a[this->unk].dst_blend_caps
-                    & D3DPBLENDCAPS_SRCALPHA) != 0) {
-            supports_blend = 1;
-            ++score;
+        l.dstblend = this->device_thing[this->devices_inited].a[this->unk].dst_blend_caps;
+        if ((l.srcblend & D3DPBLENDCAPS_ONE) != 0 && (l.dstblend & D3DPBLENDCAPS_SRCALPHA) != 0) {
+            l.supports_blend = 1;
+            ++l.score;
         }
-        if ((srcblend & D3DPBLENDCAPS_BOTHINVSRCALPHA) != 0) {
-            supports_blend2 = 1;
-            ++score;
+        if ((l.srcblend & D3DPBLENDCAPS_BOTHINVSRCALPHA) != 0) {
+            l.supports_blend2 = 1;
+            ++l.score;
         }
     }
-
-    score +=
+    l.score +=
         (this->device_thing[this->devices_inited].a[this->unk].has_linearmiplinear != 0)
         + (this->device_thing[this->devices_inited].a[this->unk].aa_edges != 0)
         + (this->device_thing[this->devices_inited].a[this->unk].aa_sortindependent != 0)
@@ -336,14 +341,12 @@ int D3dRenderer::AddD3dDevice(GUID* guid, char* name, LPD3DDEVICEDESC desc, shor
         + (this->device_thing[this->devices_inited].a[this->unk].fogtable != 0)
         + (this->device_thing[this->devices_inited].a[this->unk].subpixel != 0)
         + (this->device_thing[this->devices_inited].a[this->unk].wbuffer != 0);
-
-    score += (this->SupportsResolution(1024, 768, 16) != 0);
-    score += (this->SupportsResolution(1280, 1024, 16) != 0);
-    score +=    this->SupportsResolution(640, 480, 32);
-    this->device_thing[this->devices_inited].a[this->unk].device_score = score;
-
-    this->device_thing[this->devices_inited].a[this->unk].supports_blend2 = supports_blend2;
-    this->device_thing[this->devices_inited].a[this->unk].supports_blend = supports_blend;
+    l.score += (this->SupportsResolution(1024, 768, 16) != 0);
+    l.score += (this->SupportsResolution(1280, 1024, 16) != 0);
+    l.score += this->SupportsResolution(640, 480, 32) != 0;
+    this->device_thing[this->devices_inited].a[this->unk].device_score = l.score;
+    this->device_thing[this->devices_inited].a[this->unk].supports_blend2 = l.supports_blend2;
+    this->device_thing[this->devices_inited].a[this->unk].supports_blend = l.supports_blend;
 
     ++this->unk;
     return 1;
@@ -885,6 +888,19 @@ short ResolutionToMode(short dev, short width, short height, short bpp) {
             return i;
     }
     return -1;
+}
+
+// FUNCTION: REDLINE 0x004566E7
+int D3dRenderer::SetWindowOrigin(int screen_x, int screen_y) {
+    this->origin_screen_x = screen_x;
+    this->origin_screen_y = screen_y;
+    return 1;
+}
+
+// FUNCTION: REDLINE 0x0048ECE3
+void SetWindowOrigin(int screen_x, int screen_y) {
+    if (g_Direct3d)
+        g_Direct3d->SetWindowOrigin(screen_x, screen_y);
 }
 
 // Doesn't really match...

@@ -11,6 +11,7 @@
 #include "pack.h"
 #include "resource.h"
 #include "scripts.h"
+#include "render.h"
 
 // GLOBAL: REDLINE 0x005c3f70
 Log g_Log;
@@ -30,7 +31,7 @@ HWND g_Window = NULL;
 char g_registryKey[128];
 
 // GLOBAL: REDLINE 0x005ccf50
-void *g_GameData;
+GameData *g_GameData;
 
 // GLOBAL: REDLINE 0x005cebec
 time_t g_time;
@@ -57,15 +58,57 @@ HANDLE g_MainThread;
 // GLOBAL: REDLINE 0x005ce600
 bool g_unkBool;
 
+// GLOBAL: REDLINE 0x005CE8FC
+bool g_PublicGame;
+
+// GLOBAL: REDLINE 0x005CEBC4
+int g_WindowCreated = 0;
+
+// GLOBAL: REDLINE 0x0059c808
+int g_WindowActive = 1;
+
 // GLOBAL: REDLINE 0x005a7fd4
 class D3dRenderer* g_Direct3d;
+
+// FUNCTION: REDLINE 0x005525F3
+LRESULT RedlineWindowProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+    struct tagPOINT point;
+    if (!g_WindowCreated)
+        return DefWindowProcA(wnd, msg, wparam, lparam);
+    switch (msg) {
+        case WM_MOVE:
+            point.x = 0;
+            point.y = 0;
+            ClientToScreen(g_Window, &point);
+            SetWindowOrigin(point.x, point.y);
+            break;
+        case WM_SYSCOMMAND:
+            if (wparam == SC_KEYMENU)
+                return 0;
+        // TODO: Custom case? case 953:... CDAudio related?
+        case WM_DESTROY:
+            g_EngineState->ChangeState(STATE_SHUTDOWN);
+            // TODO: Free a bunch of stuff in method
+            if (!g_Windowed)
+                ShowCursor(true);
+            PostQuitMessage(0);
+            break;
+        case WM_ACTIVATEAPP:
+            if (g_Windowed) {
+                g_WindowActive = wparam != 0;
+            }
+            break;
+    }
+
+    return DefWindowProcA(wnd, msg, wparam, lparam);
+}
 
 // FUNCTION: REDLINE 0x00551cd9
 BOOL RegisterWindowClass() {
     WNDCLASSEXA cl;
     cl.cbSize = 0x30;
     cl.style = 0x20;
-    cl.lpfnWndProc = NULL; // TODO
+    cl.lpfnWndProc = DefWindowProcA; // TODO
     cl.cbClsExtra = 0;
     cl.cbWndExtra = 0;
     cl.hInstance = g_hInstance;
@@ -153,7 +196,7 @@ void InitGlobals() {
     g_Master_Volume = 100.0;
     g_CDAudio_Active = 1;
     g_IntroVideo = 1;
-    // g_OptConsoleEnabled = 0;
+    g_ConsoleEnabled = 0;
     g_Net_ConsoleTCP = 1;
     g_Net_Perf_CliSendFrames = 2;
     g_Net_Perf_ServSendFrames = 2;
@@ -323,7 +366,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
 
     if (LoadScripts("PC_Script.thg") ||
         LoadScripts("..\\GameData\\PC_Script.thg")) {
-        g_GameData = g_Scripts.Lookup(20, "GameData", NULL);
+        g_GameData = (GameData*)g_Scripts.Lookup(20, "GameData", NULL);
         if (!g_GameData) {
             MessageBoxA(NULL,
                         "Fatal Error Loading: Misc data script 'GameData'",
