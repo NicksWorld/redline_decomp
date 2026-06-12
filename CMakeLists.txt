@@ -36,6 +36,10 @@ target_include_directories(redline PRIVATE res)
 
 target_link_libraries(redline PRIVATE ddraw.lib dxguid.lib)
 
+target_link_directories(redline PRIVATE thirdparty/smacker)
+target_link_libraries(redline PRIVATE Smackw32.lib)
+target_include_directories(redline PRIVATE "thirdparty/smacker/include")
+
 reccmp_add_target(redline ID REDLINE)
 
 set_property(TARGET redline PROPERTY OUTPUT_NAME "Redline")

@@ -966,45 +966,53 @@ int ConstructGraphicsGlobals() {
     return 1;
 }
 
+// GLOBAL: REDLINE 0x005CEBC0
+int g_RenderFlagUnk = 0;
+
 // FUNCTION: REDLINE 0x005535AB
-char InitializeGraphics(char a) {
-    // TODO: Some flag checks?
-    if (!ConstructGraphicsGlobals())
-        return 0;
-    int res = InitWrapper(a | 2);
-    if (res == -1) {
-        MessageBoxA(
-                NULL,
-                "Redline requires Microsoft DirectX 6 or above.\n"
-                "\n"
-                "DirectX 6 can be downloaded from Microsoft at:\n"
-                "    http://www.microsoft.com/directx/\n"
-                "\n"
-                "\n"
-                "Consult the readme file for more information.",
-                NULL,
-                MB_ICONWARNING);
-        return 0;
+char InitializeGraphics(int a) {
+    if (g_RenderFlagUnk && (g_RenderFlagUnk == 1 && (a & 4) == 0)) {
+        if (!ConstructGraphicsGlobals())
+            return 0;
+        int res = InitWrapper(a | 2);
+        if (res == -1) {
+            MessageBoxA(
+                    NULL,
+                    "Redline requires Microsoft DirectX 6 or above.\n"
+                    "\n"
+                    "DirectX 6 can be downloaded from Microsoft at:\n"
+                    "    http://www.microsoft.com/directx/\n"
+                    "\n"
+                    "\n"
+                    "Consult the readme file for more information.",
+                    NULL,
+                    MB_ICONWARNING);
+            return 0;
+        }
+        if (!res) {
+            if ((a & 4) == 0) {
+                MessageBoxA(
+                        NULL,
+                        "Redline requires 3D hardware acceleration.\n"
+                        "Verify that your 3D card is installed correctly, and that its drivers are current.\n"
+                        "\n"
+                        "\n"
+                        "Consult the readme file for more information.",
+                        "Redline can't find a 3D accelerator",
+                        MB_ICONWARNING);
+            }
+            return 0;
+        } else {
+            if ((a & 4) != 0)
+                g_RenderFlagUnk = 1;
+            else
+                g_RenderFlagUnk = 2;
+        }
     }
-    if (res) {
-        // TODO: Some flag setting
-        return 1;
-    }
-    if ((a & 4) == 0) {
-        MessageBoxA(
-                NULL,
-                "Redline requires 3D hardware acceleration.\n"
-                "Verify that your 3D card is installed correctly, and that its drivers are current.\n"
-                "\n"
-                "\n"
-                "Consult the readme file for more information.",
-                "Redline can't find a 3D accelerator",
-                MB_ICONWARNING);
-    }
-    return 0;
+    return 1;
 }
 
-// FUCTION: REDLINE 0x0053A977
+// FUNCTION: REDLINE 0x0053A977
 bool StateImpl::Debug::EventTick() {
     int v5 = 1;
     if (g_DebugStartupComplete)
