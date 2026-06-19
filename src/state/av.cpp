@@ -6,11 +6,13 @@
 #include <windows.h>
 #include <winuser.h>
 
+#include "../config.h"
 #include "../enginestate.h"
 #include "../globals.h"
+#include "../log.h"
+#include "../render.h"
 
 #include <stdio.h>
-#include "../log.h"
 
 // GLOBAL: REDLINE 0x005CCF64
 int g_SmackUseMMX;
@@ -206,6 +208,131 @@ int OpenWindow() {
 // STUB: REDLINE 0x00555196
 int ConsoleServerEntry(int unk) {return 1;}
 
+// GLOBAL: REDLINE 0x005A8F54
+bool g_RendererInited = false;
+
+// FUNCTION: REDLINE 0x0048ED04
+int InitRenderer(HWND window, short dev_idx, short d3d_idx, unsigned short width, unsigned short height, unsigned short bpp, int flags) {
+    g_RendererInited = false;
+    int res = g_Direct3d->InitializeDevice(window, dev_idx, d3d_idx, width, height, bpp, flags);
+    if (res > 0) {
+        SetCapGlobals();
+        g_RendererInited = true;
+    }
+    return res;
+}
+
+// FUNCTION: REDLINE 0x0055637E
+short UnkAgain(short dev_idx, short driver_idx, short width, short height, short bpp) {
+    // TODO: Lock a mutex
+    ClearViewport(2);
+    BeginScene();
+    if (EndScene()) {
+        // TODO
+    }
+    // TODO: Unload textures?
+    int flags = 0x1C | (g_Windowed == 0 ? 2 : 0);
+    if (InitRenderer(g_Window, dev_idx, driver_idx, width, height, bpp, flags) <= 0) {
+        // TODO: Unlock mutex
+        return 0;
+    }
+
+    RenderText(5, 10, "Redline Loading...");
+    FlipDisplay();
+    if (g_Windowed) {
+        tagPOINT p;
+        p.x = p.y = 0;
+        ClientToScreen(g_Window, &p);
+        SetWindowOrigin(p.x, p.y);
+    }
+    short unk = 1;
+    // TODO: Set globals
+    while (true) {}
+}
+
+// FUNCTION: REDLINE 0x005562DA
+int UnkSomethingElse() {
+    short dev = DeviceByName(g_DisplayDevice);
+    if (dev == -1) {
+        dev = BestDevice();
+        strcpy(g_DisplayDevice, DeviceName(dev));
+    }
+    short d3d_dev = D3dDeviceByName(dev, g_DeviceDriver);
+    if (d3d_dev == -1)
+        d3d_dev = 0;
+
+    return UnkAgain(dev, d3d_dev, g_ScreenWidth, g_ScreenHeight, g_ScreenBPP);
+}
+
+// FUNCTION: REDLINE 0x00552775
+int UnkSomething() {
+    // sub_48F167(g_ConsoleEnabled == 0);
+    if (g_ConsoleEnabled) {
+        if (!ConstructGraphicsGlobals())
+            return 0;
+    } else if (!InitializeGraphics(4) && !InitializeGraphics(0)) {
+        return 0;
+    }
+
+    // TODO: A bunch of global class initializations
+
+    if (!g_ConsoleEnabled) {
+        while(!UnkSomethingElse()) {
+            ShowWindow(g_Window, 0);
+            if (!g_Windowed)
+                ShowCursor(true);
+            bool exit = false;
+            if (g_ScreenWidth == 640 && g_ScreenHeight == 480 && g_ScreenBPP == 16) {
+                short dev = DeviceByDisplayName(g_DisplayDevice);
+                char msg[256];
+                if (g_Windowed) {
+                    sprintf(
+                            msg,
+                            "Failed to setup 3D Device:\n"
+                            "%s\n"
+                            "\n"
+                            "Windowed mode or requested screen resolution may not be supported.\n"
+                            "Consult the readme file for more information.",
+                            DeviceDisplayName(dev));
+                } else {
+                    sprintf(
+                            msg,
+                            "Failed to setup 3D Device:\n"
+                            "%s\n"
+                            "\n"
+                            "Screen resolution may not be supported.\n"
+                            "Consult the readme file for more information.",
+                            DeviceDisplayName(dev));
+                }
+                MessageBoxA(g_Window, msg, NULL, MB_ICONWARNING);
+                exit = true;
+            } else {
+                g_ScreenWidth = 640;
+                g_ScreenHeight = 480;
+                g_ScreenBPP = 16;
+                char buf[256];
+                sprintf(
+                        buf,
+                        "The resolution requested will not work with Redline and your 3D device.\n"
+                        "The default resolution of 640x480 x16 will be used.");
+                if (MessageBoxA(g_Window, buf, NULL, MB_ICONWARNING | MB_OKCANCEL) == 2) {
+                    exit = true;
+                }
+            }
+
+            if (!g_Windowed)
+                ShowCursor(false);
+            ShowWindow(g_Window, 5);
+            if (exit)
+                return 0;
+        }
+        g_Config->Write();
+        // TODO
+    }
+    // TODO
+    return 1;
+}
+
 // FUNCTION: REDLINE 0x0053E307
 bool StateImpl::AV::Init(int next_state) {
     if (g_ConsoleEnabled) {
@@ -213,6 +340,9 @@ bool StateImpl::AV::Init(int next_state) {
     } else if (OpenWindow() != 1) {
         return 0;
     }
+    if (UnkSomething() != 1)
+        return 0;
+    while (true) {}
     // TODO
     return true;
 }

@@ -27,13 +27,13 @@ Config::Config() {
 
     // Size variables appear to have been copied and pasted, but unused?
     // May not be an issue as it could be correct if dynamically resized?
-    this->unused_size6 = 256;
+    this->car_keybind_size = 256;
     this->keybinds_car = new int[this->keybind_size];
-    this->unused_size7 = 3;
+    this->car_mousebind_size = 3;
     this->mousebinds_car = new int[this->mousebind_size];
-    this->unused_size8 = 13;
+    this->car_joybind_size = 13;
     this->joybinds_car = new int[this->joybind_size];
-    this->unused_size9 = 9;
+    this->car_jhatbind_size = 9;
     this->jhatbinds_car = new int[this->jhatbind_size];
 
     int i;
@@ -1068,6 +1068,193 @@ void Config::Default() {
     this->DefaultConf();
 };
 
+// FUNCTION: REDLINE 0x0043DF05
+int Config::Write() {
+    FILE* file = fopen("redline.cfg", "w");
+    if (file) {
+        this->PopulateDefaults();
+        this->WriteHeader(file);
+        this->WriteMappings(file);
+        this->WriteValues(file);
+        fflush(file);
+        fclose(file);
+    }
+    return 0;
+}
+
+// FUNCTION: REDLINE 0x0043EA54
+void Config::WriteHeader(FILE* file) {
+    if (!file)
+        return;
+    fprintf(file, "%s\n", "##########################################################");
+    fprintf(file, "%s\n", "# Redline Configuration File");
+    fprintf(file, "%s\n", "##########################################################");
+}
+
+// FUNCTION: REDLINE 0x0043EAAB
+void Config::WriteMappings(FILE* file) {
+    if (!file)
+        return;
+
+    fprintf(file, "\n%s\n", "################");
+    fprintf(file, "%s\n", "# Input Mappings");
+    fprintf(file, "%s\n\n", "################");
+
+    short i;
+    char* action_name;
+    char* button_name;
+
+    fprintf(file, "%s\n", "# Keyboard Mappings");
+    for (i = 0; i < this->keybind_size; ++i) {
+        if (this->keybinds_foot[i] > -1) {
+            action_name = GetActionName(this->keybinds_foot[i]);
+            button_name = GetKeyName(i);
+            if (button_name && action_name) {
+                fprintf(file, "map %s %s\n", button_name, action_name);
+            } else if (button_name) {
+                fprintf(file, "# Unable to locate impulse %d\n", this->keybinds_foot[i]);
+            } else {
+                fprintf(file, "# Unable to locate input %d\n", i);
+            }
+        }
+    }
+
+    fprintf(file, "%s\n", "# Mouse Mappings");
+    for (i = 0; i < this->mousebind_size; ++i) {
+        if (this->mousebinds_foot[i] > -1) {
+            action_name = GetActionName(this->mousebinds_foot[i]);
+            button_name = GetMbuttonName(i);
+            if (button_name && action_name) {
+                fprintf(file, "map %s %s\n", button_name, action_name);
+            } else if (button_name) {
+                fprintf(file, "# Unable to locate impulse %d\n", this->mousebinds_foot[i]);
+            } else {
+                fprintf(file, "# Unable to locate input %d\n", i);
+            }
+        }
+    }
+
+    fprintf(file, "%s\n", "# Joystick Mappings");
+    for (i = 0; i < this->joybind_size; ++i) {
+        if (this->joybinds_foot[i] > -1) {
+            action_name = GetActionName(this->joybinds_foot[i]);
+            button_name = GetJoybuttonName(i);
+            if (button_name && action_name) {
+                fprintf(file, "map %s %s\n", button_name, action_name);
+            } else if (button_name) {
+                fprintf(file, "# Unable to locate impulse %d\n", this->joybinds_foot[i]);
+            } else {
+                fprintf(file, "# Unable to locate input %d\n", i);
+            }
+        }
+    }
+
+    fprintf(file, "%s\n", "# Joystick Hat Mappings");
+    for (i = 0; i < this->jhatbind_size; ++i) {
+        if (this->jhatbinds_foot[i] > -1) {
+            action_name = GetActionName(this->jhatbinds_foot[i]);
+            button_name = GetJoyhatName(i);
+            if (button_name && action_name) {
+                fprintf(file, "map %s %s\n", button_name, action_name);
+            } else if (button_name) {
+                fprintf(file, "# Unable to locate impulse %d\n", this->jhatbinds_foot[i]);
+            } else {
+                fprintf(file, "# Unable to locate input %d\n", i);
+            }
+        }
+    }
+
+    fprintf(file, "%s\n", "# Car Keyboard Mappings");
+    for (i = 0; i < this->car_keybind_size; ++i) {
+        if (this->keybinds_car[i] > -1) {
+            action_name = GetActionName(this->keybinds_car[i]);
+            button_name = GetKeyName(i);
+            if (button_name && action_name) {
+                fprintf(file, "map car %s %s\n", button_name, action_name);
+            } else if (button_name) {
+                fprintf(file, "# Unable to locate impulse %d\n", this->keybinds_car[i]);
+            } else {
+                fprintf(file, "# Unable to locate input %d\n", i);
+            }
+        }
+    }
+
+    fprintf(file, "%s\n", "# Car Mouse Mappings");
+    for (i = 0; i < this->car_mousebind_size; ++i) {
+        if (this->mousebinds_car[i] > -1) {
+            action_name = GetActionName(this->mousebinds_car[i]);
+            button_name = GetMbuttonName(i);
+            if (button_name && action_name) {
+                fprintf(file, "map car %s %s\n", button_name, action_name);
+            } else if (button_name) {
+                fprintf(file, "# Unable to locate impulse %d\n", this->mousebinds_car[i]);
+            } else {
+                fprintf(file, "# Unable to locate input %d\n", i);
+            }
+        }
+    }
+
+    fprintf(file, "%s\n", "# Car Joystick Mappings");
+    for (i = 0; i < this->car_joybind_size; ++i) {
+        if (this->joybinds_car[i] > -1) {
+            action_name = GetActionName(this->joybinds_car[i]);
+            button_name = GetJoybuttonName(i);
+            if (button_name && action_name) {
+                fprintf(file, "map car %s %s\n", button_name, action_name);
+            } else if (button_name) {
+                fprintf(file, "# Unable to locate impulse %d\n", this->joybinds_car[i]);
+            } else {
+                fprintf(file, "# Unable to locate input %d\n", i);
+            }
+        }
+    }
+
+    fprintf(file, "%s\n", "# Car Joystick Hat Mappings");
+    for (i = 0; i < this->car_jhatbind_size; ++i) {
+        if (this->jhatbinds_car[i] > -1) {
+            action_name = GetActionName(this->jhatbinds_car[i]);
+            button_name = GetJoyhatName(i);
+            if (button_name && action_name) {
+                fprintf(file, "map car %s %s\n", button_name, action_name);
+            } else if (button_name) {
+                fprintf(file, "# Unable to locate impulse %d\n", this->jhatbinds_car[i]);
+            } else {
+                fprintf(file, "# Unable to locate input %d\n", i);
+            }
+        }
+    }
+}
+
+// FUNCTION: REDLINE 0x0043F1C7
+void Config::WriteValues(FILE* file) {
+    if (!file)
+        return;
+    fprintf(file, "\n%s\n", "#############");
+    fprintf(file, "%s\n", "# Definitions");
+    fprintf(file, "%s\n\n", "#############");
+    for (int i = 0; i < this->conf_size; ++i) {
+        for (Value* v = this->conf_values[i]; v; v = v->next) {
+            fprintf(file, "%s ", v->name);
+            switch (v->kind) {
+                case VALUE_SIGNED:
+                case VALUE_INTBOOL:
+                case VALUE_CHARBOOL:
+                    fprintf(file, "%d\n", v->value.integer);
+                    break;
+                case VALUE_FLOAT:
+                    fprintf(file, "%f\n", v->value.decimal);
+                    break;
+                case VALUE_STRING:
+                    fprintf(file, "'%s'\n", v->value.string);
+                    break;
+                default:
+                    fprintf(file, "Unknown data type\n");
+                    break;
+            }
+        }
+    }
+}
+
 // FUNCTION: REDLINE 0x0043da38
 int Config::Load() {
     // TODO: Init some variables
@@ -1393,30 +1580,30 @@ int Config::ApplyKeybinds(bool car) {
 
     if (car) {
         // Remove conflicting foot keybinds for car-bound actions
-        for (i = 0; i < this->unused_size6; ++i)
+        for (i = 0; i < this->car_keybind_size; ++i)
             if (this->keybinds_car[i] > -1)
                 UnbindAction(this->keybinds_car[i]);
-        for (i = 0; i < this->unused_size7; ++i)
+        for (i = 0; i < this->car_mousebind_size; ++i)
             if (this->mousebinds_car[i] > -1)
                 UnbindAction(this->mousebinds_car[i]);
-        for (i = 0; i < this->unused_size8; ++i)
+        for (i = 0; i < this->car_joybind_size; ++i)
             if (this->joybinds_car[i] > -1)
                 UnbindAction(this->joybinds_car[i]);
-        for (i = 0; i < this->unused_size9; ++i)
+        for (i = 0; i < this->car_jhatbind_size; ++i)
             if (this->jhatbinds_car[i] > -1)
                 UnbindAction(this->jhatbinds_car[i]);
 
         // Apply car keybindings
-        for (i = 0; i < this->unused_size6; ++i)
+        for (i = 0; i < this->car_keybind_size; ++i)
             if (this->keybinds_car[i] > -1)
                 BindKey(i, this->keybinds_car[i]);
-        for (i = 0; i < this->unused_size7; ++i)
+        for (i = 0; i < this->car_mousebind_size; ++i)
             if (this->mousebinds_car[i] > -1)
                 BindMouse(i, this->mousebinds_car[i]);
-        for (i = 0; i < this->unused_size8; ++i)
+        for (i = 0; i < this->car_joybind_size; ++i)
             if (this->joybinds_car[i] > -1)
                 BindJoybutton(i, this->joybinds_car[i]);
-        for (i = 0; i < this->unused_size9; ++i)
+        for (i = 0; i < this->car_jhatbind_size; ++i)
             if (this->jhatbinds_car[i] > -1)
                 BindJoyhat(i, this->jhatbinds_car[i]);
     }

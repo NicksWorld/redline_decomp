@@ -55,6 +55,12 @@ extern int g_WindowActive;
 
 extern bool g_PublicGame;
 
+extern short g_SupportsBlend;
+extern short g_SupportsBlend2;
+extern short g_SupportsDither;
+extern short g_SupportsWbuffer;
+extern short g_SupportsFogTable;
+
 #define GLOBAL_STRING_SIZE 128
 // Configurable Values
 extern int g_D3DSound;

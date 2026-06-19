@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdio.h>
 
 union ValueInner {
     int integer;
@@ -51,13 +52,13 @@ class Config {
 
     // Further ints seem unused for sizing
     int* keybinds_car;
-    int unused_size6;
+    int car_keybind_size;
     int* mousebinds_car;
-    int unused_size7;
+    int car_mousebind_size;
     int* joybinds_car;
-    int unused_size8;
+    int car_joybind_size;
     int* jhatbinds_car;
-    int unused_size9;
+    int car_jhatbind_size;
     public:
     Config();
     void ResetBinds();
@@ -68,6 +69,11 @@ class Config {
     void Default();
     void DefaultConf();
     void PopulateDefaults();
+
+    int Write();
+    void WriteHeader(FILE* file);
+    void WriteMappings(FILE* file);
+    void WriteValues(FILE* files);
 
     int Load();
     char* TokenizeCmdline(char* cmdline, int *out_token, char* out_val);

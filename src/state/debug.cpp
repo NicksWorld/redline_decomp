@@ -953,65 +953,6 @@ int open_console_setup(int nCmdShow) {
     return res;
 }
 
-int InitWrapper(int flags) {
-    return g_Direct3d->Initialize(flags);
-}
-
-// STUB: REDLINE 0x0048E731
-int ConstructGraphicsGlobals() {
-    if (!g_Direct3d) {
-        g_Direct3d = new D3dRenderer();
-    }
-    // TODO
-    return 1;
-}
-
-// GLOBAL: REDLINE 0x005CEBC0
-int g_RenderFlagUnk = 0;
-
-// FUNCTION: REDLINE 0x005535AB
-char InitializeGraphics(int a) {
-    if (g_RenderFlagUnk && (g_RenderFlagUnk == 1 && (a & 4) == 0)) {
-        if (!ConstructGraphicsGlobals())
-            return 0;
-        int res = InitWrapper(a | 2);
-        if (res == -1) {
-            MessageBoxA(
-                    NULL,
-                    "Redline requires Microsoft DirectX 6 or above.\n"
-                    "\n"
-                    "DirectX 6 can be downloaded from Microsoft at:\n"
-                    "    http://www.microsoft.com/directx/\n"
-                    "\n"
-                    "\n"
-                    "Consult the readme file for more information.",
-                    NULL,
-                    MB_ICONWARNING);
-            return 0;
-        }
-        if (!res) {
-            if ((a & 4) == 0) {
-                MessageBoxA(
-                        NULL,
-                        "Redline requires 3D hardware acceleration.\n"
-                        "Verify that your 3D card is installed correctly, and that its drivers are current.\n"
-                        "\n"
-                        "\n"
-                        "Consult the readme file for more information.",
-                        "Redline can't find a 3D accelerator",
-                        MB_ICONWARNING);
-            }
-            return 0;
-        } else {
-            if ((a & 4) != 0)
-                g_RenderFlagUnk = 1;
-            else
-                g_RenderFlagUnk = 2;
-        }
-    }
-    return 1;
-}
-
 // FUNCTION: REDLINE 0x0053A977
 bool StateImpl::Debug::EventTick() {
     int v5 = 1;
