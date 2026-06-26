@@ -21,6 +21,8 @@ add_executable(redline WIN32
     src/replay.cpp
     src/registry.cpp
     src/render.cpp
+    src/texture_mgr.cpp
+    src/interface.cpp
     thirdparty/3dnow/amddcpu.cpp
 
     # Game state methods

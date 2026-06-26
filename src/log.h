@@ -14,3 +14,5 @@ class Log {
     void DxErrToString(int err, char* buf);
     void D3dErrToString(int err, char* buf);
 };
+
+void SomeDebug(const char* msg);

@@ -3,7 +3,11 @@
 #include <windows.h>
 #include <ddraw.h>
 #include <d3d.h>
+#undef LoadImage
 
+#include "file.h"
+
+struct BitmapSlot;
 
 struct Device {
     GUID* guid;
@@ -87,6 +91,8 @@ class Renderer {
     virtual void PruneDevices(short remaining) = 0;
     virtual int InitializeDevice(HWND window, short dev_idx, short d3d_idx, unsigned short width, unsigned short height, unsigned short bpp, int flags) = 0;
     virtual int GetCaps() = 0;
+    virtual void VtablePad() = 0;
+    virtual LPDIRECT3DDEVICE3 D3dDevice() = 0;
 
     Renderer();
 
@@ -164,12 +170,13 @@ class D3dRenderer : public Renderer {
     virtual void PruneDevices(short remaining); // vtable[4]
     virtual int InitializeDevice(HWND window, short dev_idx, short d3d_idx, unsigned short width, unsigned short height, unsigned short bpp, int flags); // vtable[5]
     virtual int GetCaps(); // vtable[6]
+    virtual void VtablePad(); // vtable[7]
+    virtual LPDIRECT3DDEVICE3 D3dDevice(); // vtable[8]
     
     D3dRenderer();
 
     DevThing* d3d_devices;
     int zbuffer_fmt_count;
-    // char pad3[4];
     unsigned int texfmt_count;
     TextureFormat texfmts[16];
     TextureFormat* fmt_8bpp_palette;
@@ -189,7 +196,8 @@ class D3dRenderer : public Renderer {
     LPDIRECT3DMATERIAL3 viewport_mat;
     D3DMATERIALHANDLE viewport_mat_handle;
     int some_flags;
-    char pad4_0[4];
+    short unk_flag; // supports_palette?
+    char pad4_0[2];
 
     int Initialize(int flags);
     int InitializeDirectDraw(short dev_idx);
@@ -210,6 +218,7 @@ class D3dRenderer : public Renderer {
     int SetViewportMaterial(unsigned char r, unsigned char b, unsigned char g);
     void SetRenderState();
     void QueryMemory();
+    int GetFreeTextureMemory();
     int DeviceInit();
     int GetSurfaceDesc(LPDDSURFACEDESC2 desc, LPDIRECTDRAWSURFACE4 surf);
     int AddD3dDevice(GUID* guid, char* name, LPD3DDEVICEDESC desc, short unk);
@@ -246,6 +255,14 @@ class D3dRenderer : public Renderer {
 
     bool RestoreSurfaces();
     int FlipDisplay();
+
+    short CreateSurface(LPDDSURFACEDESC2 desc, LPDIRECTDRAWSURFACE4* surf);
+    short CreatePalette(int flags, LPPALETTEENTRY entry, LPDIRECTDRAWPALETTE* palette);
+
+    TextureFormat* BestTextureFormat(short* bpp, short alpha_req);
+
+    int LoadImage(const char* path, BitmapSlot* slot);
+    int PopulateTexture(LPDIRECTDRAWSURFACE4 surf, ImageFileContainer* img, DDSURFACEDESC2 *desc, LPDIRECTDRAWPALETTE palette, short flags, short unk, short unk2);
 };
 
 int DeviceCount();
@@ -275,6 +292,9 @@ int InitWrapper(int flags);
 int ConstructGraphicsGlobals();
 char InitializeGraphics(int a);
 void SetCapGlobals();
+
+BOOL LockRender();
+BOOL UnlockRender();
 
 class UnknownRender {
     public:

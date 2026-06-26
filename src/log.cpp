@@ -1,5 +1,7 @@
 #include "log.h"
 
+#include "globals.h"
+
 #include <fstream.h>
 #include <stdio.h>
 #include <time.h>
@@ -77,6 +79,12 @@ cleanup:
 void Log::Debug(const char *msg) {
     // Really, this method is completely empty
     MessageBoxA(NULL, msg, NULL, MB_ICONWARNING);
+}
+
+// STUB: REDLINE 0x0043CBE0
+void SomeDebug(const char* msg) {
+    // In reality this is empty
+    g_Log.Debug(msg);
 }
 
 // FUNCTION: REDLINE 0x004A97A6

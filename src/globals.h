@@ -11,6 +11,9 @@ extern class StateTree *g_StateTree;
 extern class Keybinds *g_Keybinds;
 extern class Replay *g_Replay;
 extern class D3dRenderer * g_Direct3d;
+extern class TextureMgr * g_TextureMgr;
+extern class BitmapHolder *g_BitmapHolder;
+extern class CInterface* g_Interface;
 
 // GameData script (rough, sizing wrong)
 struct GameData {
@@ -49,6 +52,7 @@ extern bool g_LobbyEnabled;
 
 
 extern bool g_unkBool;
+extern bool g_DemoSystemActive;
 
 extern int g_WindowCreated;
 extern int g_WindowActive;
@@ -60,6 +64,13 @@ extern short g_SupportsBlend2;
 extern short g_SupportsDither;
 extern short g_SupportsWbuffer;
 extern short g_SupportsFogTable;
+
+extern short g_ShouldLoadImages;
+
+extern short g_UsePalettedTextures;
+extern short g_UseEnviroMapping;
+extern short g_UseDither;
+extern short g_UseMips;
 
 #define GLOBAL_STRING_SIZE 128
 // Configurable Values

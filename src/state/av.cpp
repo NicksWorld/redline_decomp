@@ -1,5 +1,6 @@
 #include "av.h"
 
+#include <d3dtypes.h>
 #include <smack.h>
 #include <ddraw.h>
 
@@ -8,9 +9,11 @@
 
 #include "../config.h"
 #include "../enginestate.h"
+#include "../interface.h"
 #include "../globals.h"
 #include "../log.h"
 #include "../render.h"
+#include "../texture_mgr.h"
 
 #include <stdio.h>
 
@@ -48,13 +51,6 @@ HCURSOR g_SmackCursor;
 const int g_SmackBlitFlags[5] = {1, 2, 4, 8, 1};
 // GLOBAL: REDLINE 0x005CCFEC
 int g_SmackUnk = 0;
-
-
-// STUB: REDLINE 0x0043CBE0
-void SomeDebug(const char* msg) {
-    // In reality this is empty
-    g_Log.Debug(msg);
-}
 
 // FUNCTION: REDLINE 0x00533C3D
 void DrawIntro(HWND window) {
@@ -222,18 +218,68 @@ int InitRenderer(HWND window, short dev_idx, short d3d_idx, unsigned short width
     return res;
 }
 
+// GLOBAL: REDLINE 0x005A8F4E
+short g_UsePalettedTextures;
+// FUNCTION: REDLINE 0x0048F471
+void SetUsePalettedTextures(short v) {
+    g_UsePalettedTextures = v;
+}
+
+// GLOBAL: REDLINE 0x005A8F4C
+short g_UseEnviroMapping;
+// FUNCTION: REDLINE 0x0048F457
+void SetUseEnviroMapping(short v) {
+    g_UseEnviroMapping = v;
+}
+
+// GLOBAL: REDLINE 0x005A8F32
+short g_UseDither;
+// FUNCTION: REDLINE 0x0048F677
+void SetUseDither(short v) {
+    if (g_UseDither != v) {
+        if (g_SupportsDither) {
+            g_UseDither = v;
+            g_Direct3d->D3dDevice()->SetRenderState(D3DRENDERSTATE_DITHERENABLE, v);
+        }
+    }
+}
+
+// GLOBAL: REDLINE 0x005A8F50
+short g_UseMips;
+// FUNCTION: REDLINE 0x0048FCFE
+void SetUseMips(short v) {
+    if (g_UseMips != v) {
+        if (v == 2) {
+            short has_linear = g_Direct3d->d3d_devices[g_Direct3d->sel_ddraw].a[g_Direct3d->sel_d3d].has_linearmiplinear;
+            if (!has_linear)
+                v = 1;
+        }
+        g_UseMips = v;
+    }
+}
+
+// STUB: REDLINE 0x0048EE42
+short InitTextures(int flags) {
+    int res = g_TextureMgr->Init(flags);
+    if (!res)
+        return 0;
+    // TODO: g_BitmapHolder->Clear();
+    g_TextureMgr->LoadTextures();
+    return 1;
+}
+
 // FUNCTION: REDLINE 0x0055637E
 short UnkAgain(short dev_idx, short driver_idx, short width, short height, short bpp) {
-    // TODO: Lock a mutex
+    LockRender();
     ClearViewport(2);
     BeginScene();
     if (EndScene()) {
-        // TODO
+        FlipDisplay();
     }
-    // TODO: Unload textures?
+    // TODO: Unload textures
     int flags = 0x1C | (g_Windowed == 0 ? 2 : 0);
     if (InitRenderer(g_Window, dev_idx, driver_idx, width, height, bpp, flags) <= 0) {
-        // TODO: Unlock mutex
+        UnlockRender();
         return 0;
     }
 
@@ -245,9 +291,27 @@ short UnkAgain(short dev_idx, short driver_idx, short width, short height, short
         ClientToScreen(g_Window, &p);
         SetWindowOrigin(p.x, p.y);
     }
-    short unk = 1;
-    // TODO: Set globals
-    while (true) {}
+    short res = 1;
+    SetUsePalettedTextures(g_PalettedTextures);
+    SetUseEnviroMapping(g_EnviroMapping);
+    SetUseDither(g_DitherEnable);
+    SetUseMips(g_MipMapping);
+    int texdetail_flag = 0;
+    switch(g_TextureDetail) {
+        case 0:
+            texdetail_flag = 4;
+            break;
+        case 1:
+            texdetail_flag = 8;
+            break;
+    }
+    int texmgr_flag = g_DXtextureManager == 0;
+    int mip_flag = 0;
+    if (g_MipMapping)
+        mip_flag = 2;
+    res = InitTextures(texdetail_flag | mip_flag | texmgr_flag);
+    UnlockRender();
+    return res;
 }
 
 // FUNCTION: REDLINE 0x005562DA
@@ -274,7 +338,12 @@ int UnkSomething() {
         return 0;
     }
 
-    // TODO: A bunch of global class initializations
+    SetBitmapAssetPath(g_GameData->data_dir);
+    // TODO: Init class that just stores up to 12 filenames matching *.rdm
+    // 0x005A7FCC (Likely demo files)
+    if (g_PlayDemo || g_RecordDemo)
+        g_DemoSystemActive = true;
+    g_Interface = new CInterface();
 
     if (!g_ConsoleEnabled) {
         while(!UnkSomethingElse()) {
@@ -327,7 +396,10 @@ int UnkSomething() {
                 return 0;
         }
         g_Config->Write();
-        // TODO
+        if (!g_Interface->InitGraphics()) {
+            g_Log.Debug("*Error - Init interface graphics failed.");
+            return 0;
+        }
     }
     // TODO
     return 1;

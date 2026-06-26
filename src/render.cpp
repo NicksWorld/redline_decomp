@@ -3,6 +3,10 @@
 #include "globals.h"
 #include "log.h"
 #include "registry.h"
+#include "texture_mgr.h"
+#include "mutex.h"
+#include "file.h"
+#include "pack.h"
 
 #include <d3d.h>
 #include <d3dcaps.h>
@@ -51,6 +55,12 @@ D3dRenderer::D3dRenderer() : Renderer() {
       this->default_matrix._22 = 1.0;
       this->default_matrix._33 = 1.0;
       this->default_matrix._44 = 1.0;
+}
+
+void D3dRenderer::VtablePad() {}
+
+LPDIRECT3DDEVICE3 D3dRenderer::D3dDevice() {
+    return this->d3d_device;
 }
 
 // FUNCTION: REDLINE 0x00451FD9
@@ -954,7 +964,14 @@ int ConstructGraphicsGlobals() {
     if (!g_Direct3d) {
         g_Direct3d = new D3dRenderer();
     }
-    // TODO
+    if (!g_BitmapHolder) {
+        g_BitmapHolder = new BitmapHolder();
+    }
+    if (!g_TextureMgr) {
+        g_TextureMgr = new TextureMgr();
+    }
+
+    g_BitmapHolder->SetRenderer(g_Direct3d);
     return 1;
 }
 
@@ -2151,6 +2168,24 @@ int D3dRenderer::FlipDisplay() {
     return v9;
 }
 
+// FUNCTION: REDLINE 0x00451FED
+int D3dRenderer::GetFreeTextureMemory() {
+    this->QueryMemory();
+    return this->texmem_free;
+}
+
+// GLOBAL: REDLINE 0x005A8F58
+Mutex g_renderLock = Mutex(NULL);
+
+// FUNCTION: REDLINE 0x0048F437
+BOOL LockRender() {
+    return g_renderLock.Acquire(-1);
+}
+// FUNCTION: REDLINE 0x0048F448
+BOOL UnlockRender() {
+    return g_renderLock.Release();
+}
+
 // GLOBAL: REDLINE 0x005A8F20
 short g_SupportsBlend;
 // GLOBAL: REDLINE 0x005A8F22
@@ -2161,6 +2196,9 @@ short g_SupportsDither;
 short g_SupportsWbuffer;
 // GLOBAL: REDLINE 0x005A8F28
 short g_SupportsFogTable;
+
+// GLOBAL: REDLINE 0x005A8F52 
+short g_ShouldLoadImages;
 
 // STUB: REDLINE 0x0048f496
 void SetCapGlobals() {
@@ -2185,5 +2223,399 @@ void SetCapGlobals() {
     // word_5A8F50 = -1;
     // word_5A8F4C = 1;
     // word_5A8F4E = 1;
-    // word_5A8F52 = 1;
+    g_ShouldLoadImages = 1;
+}
+
+// FUNCTION: REDLINE 0x00455534
+TextureFormat* D3dRenderer::BestTextureFormat(short* bpp, short alpha_req) {
+    if (alpha_req == 0) {
+        switch (*bpp) {
+            case 8:
+                if (this->fmt_8bpp_palette && this->unk_flag) {
+                    *bpp = 8;
+                    return this->fmt_8bpp_palette;
+                }
+            default:
+                if (this->fmt_16bpp) {
+                    *bpp = 16;
+                    return this->fmt_16bpp;
+                }
+            case 32:
+                if (this->fmt_32bpp_noalpha) {
+                    *bpp = 32;
+                    return this->fmt_32bpp_noalpha;
+                }
+        }
+    } else {
+        switch(*bpp) {
+            case 16:
+                if (this->fmt_16bpp_minalpha && alpha_req == -1) {
+                    *bpp = 16;
+                    return this->fmt_16bpp_minalpha;
+                }
+                if (this->fmt_16bpp_maxalpha) {
+                    *bpp = 16;
+                    return this->fmt_16bpp_maxalpha;
+                }
+            case 32:
+                if (this->fmt_32bpp_alpha) {
+                    *bpp = 32;
+                    return this->fmt_32bpp_alpha;
+                }
+        }
+    }
+    return 0;
+}
+
+// FUNCTION: REDLINE 0x00457F96
+short D3dRenderer::CreateSurface(LPDDSURFACEDESC2 desc, LPDIRECTDRAWSURFACE4* surf) {
+    int res = this->ddraw->CreateSurface(desc, surf, NULL);
+    if (res) {
+        g_Log.DxErr("Creating Surface", res);
+        return 0;
+    }
+    return 1;
+}
+
+// FUNCTION: REDLINE 0x00457FE6
+short D3dRenderer::CreatePalette(int flags, LPPALETTEENTRY entry, LPDIRECTDRAWPALETTE* palette) {
+    int res = this->ddraw->CreatePalette(flags, entry, palette, NULL);
+    if (res) {
+        g_Log.DxErr("Creating Palette", res);
+        return 0;
+    }
+    return 1;
+}
+
+
+// FUNCTION: REDLINE 0x0045803A
+int D3dRenderer::LoadImage(const char* path, BitmapSlot* slot) {
+    slot->palette = NULL;
+    slot->surf = NULL;
+    slot->unk = 0;
+    slot->unk2 = 0;
+
+    ImageFileContainer image_file;
+    int v14 = 0;
+    if (!image_file.LoadTGA(path)) {
+        char btf_path[128];
+        strcpy(btf_path, path);
+        short len = strlen(btf_path);
+        strcpy(&btf_path[len - 3], "btf");
+        if (!image_file.LoadBTF(btf_path)) {
+            char buf[128];
+            sprintf(buf, "*Error: Loading texture: %s (file not found)", path);
+            g_Log.Print(buf);
+            return -1;
+        }
+    }
+
+    image_file.FlipVertical();
+
+    short bpp = 32;
+    DDSURFACEDESC2 surf_desc;
+    memset(&surf_desc, 0, sizeof(surf_desc));
+    surf_desc.dwSize = sizeof(surf_desc);
+    surf_desc.dwFlags = 7;
+    surf_desc.ddsCaps.dwCaps = 2112;
+    surf_desc.dwHeight = image_file.height;
+    surf_desc.dwWidth = image_file.width;
+
+    slot->height = height;
+    slot->width = width;
+    slot->bpp = bpp;
+
+    int res = this->ddraw->CreateSurface(&surf_desc, &slot->surf, NULL);
+    if (res) {
+        g_Log.DxErr("Creating texture surface System Memory", res);
+        if (slot->surf) {
+            slot->surf->Release();
+            slot->surf = NULL;
+        }
+        if (slot->palette) {
+            slot->palette->Release();
+            slot->palette = NULL;
+        }
+    }
+
+    if (!this->PopulateTexture(slot->surf, &image_file, &surf_desc, slot->palette, bpp, 0, 0))
+        return 0;
+
+    return 1;
+}
+
+
+// FUNCTION: REDLINE 0x00458365
+int D3dRenderer::PopulateTexture(LPDIRECTDRAWSURFACE4 surf, ImageFileContainer *img, DDSURFACEDESC2 *desc, LPDIRECTDRAWPALETTE palette, short bpp, short alpha, short mip) {
+    int res;
+
+    int palette_size = 256;
+    int paletted = 0;
+    int palette_caps = 0;
+    int cmap_len = img->cmap_len;
+    char* cmap = img->image_cmap;
+    int width = img->width;
+    int height = img->height;
+
+    void* surf_mem;
+    char* color_data;
+
+    float red_mult, green_mult, blue_mult, alpha_mult;
+    int red_shift, green_shift, blue_shift, alpha_shift;
+
+    int pitch;
+    int img_bpp;
+    int x, y;
+
+    if (mip) {
+        width >>= mip;
+        height >>= mip;
+    }
+
+    memset(desc, 0, sizeof(DDSURFACEDESC2));
+    desc->dwSize = sizeof(DDSURFACEDESC2);
+    surf->GetSurfaceDesc(desc);
+    
+    /** PALETTE SETUP **/
+    bpp = desc->ddpfPixelFormat.dwRGBBitCount;
+    if ((desc->ddpfPixelFormat.dwFlags & DDPF_PALETTEINDEXED8) != 0) {
+        palette_size = 256;
+        paletted = 1;
+        palette_caps = DDPCAPS_ALLOW256 | DDPCAPS_8BIT;
+    }
+    if ((desc->ddpfPixelFormat.dwFlags & DDPF_PALETTEINDEXED4) != 0) {
+        palette_size = 16;
+        paletted = 1;
+        palette_caps = DDPCAPS_4BIT;
+    }
+
+    if (palette_size > cmap_len)
+        palette_size = cmap_len;
+    if (paletted) {
+        tagPALETTEENTRY img_palette[256];
+        for (int i = 0; i < palette_size; ++i) {
+            img_palette[i].peRed = cmap[4 * i + 2];
+            img_palette[i].peGreen = cmap[4 * i + 2];
+            img_palette[i].peBlue = cmap[4 * i + 2];
+            img_palette[i].peFlags = 68;
+        }
+        if (!palette) {
+            res = this->ddraw->CreatePalette(palette_caps | DDPCAPS_INITIALIZE, img_palette, &palette, NULL);
+            if (res) {
+                g_Log.DxErr("creating palette", res);
+                goto err;
+            }
+        }
+        res = surf->SetPalette(palette);
+        if (res) {
+            g_Log.DxErr("setting surface palette", res);
+            goto err;
+        }
+        if (palette) {
+            palette->Release();
+            palette = NULL;
+        }
+    }
+    /** END PALETTE SETUP **/
+
+    DDSURFACEDESC2 lock_desc;
+    memset(&lock_desc, 0, sizeof(lock_desc));
+    lock_desc.dwSize = sizeof(lock_desc);
+    res = surf->Lock(NULL, &lock_desc, 0, NULL);
+    if (res) {
+        g_Log.DxErr("Locking Surface", res);
+        goto err;
+    }
+
+    surf_mem = lock_desc.lpSurface;
+    if (!mip) {
+        color_data = img->image_data;
+    } else {
+        color_data = img->GetMip(mip);
+    }
+
+    if (bpp != 8) {
+        int channel_bits = 0;
+        int mask;
+        for (mask = desc->ddpfPixelFormat.dwRBitMask; (mask & 1) == 0; mask >>= 1)
+            ++channel_bits;
+        red_shift = channel_bits;
+        red_mult = 1.0 / (float)(0xFF / (desc->ddpfPixelFormat.dwRBitMask >> channel_bits));
+        channel_bits = 0;
+        for (mask = desc->ddpfPixelFormat.dwGBitMask; (mask & 1) == 0; mask >>= 1)
+            ++channel_bits;
+        green_shift = channel_bits;
+        green_mult = 1.0 / (float)(0xFF / (desc->ddpfPixelFormat.dwGBitMask >> channel_bits));
+        channel_bits = 0;
+        for (mask = desc->ddpfPixelFormat.dwBBitMask; (mask & 1) == 0; mask >>= 1)
+            ++channel_bits;
+        blue_shift = channel_bits;
+        blue_mult = 1.0 / (float)(0xFF / (desc->ddpfPixelFormat.dwBBitMask >> channel_bits));
+
+        if (alpha) {
+            channel_bits = 0;
+            for (mask = desc->ddpfPixelFormat.dwRGBAlphaBitMask; (mask & 1) == 0; mask >>= 1)
+                ++channel_bits;
+            int alpha_bits = channel_bits;
+            alpha_mult = 1.0 / (float)(0xFF / (desc->ddpfPixelFormat.dwBBitMask >> channel_bits));
+        }
+    }
+
+    pitch = lock_desc.lPitch;
+    img_bpp = img->bpp;
+    switch (img_bpp) {
+        case 32:
+            if (bpp == 32) {
+                int* surf = (int*)lock_desc.lpSurface;
+                for (y = 0; y < height; ++y) {
+                    for (x = 0; x < width; ++x) {
+                        int b = *color_data++ * blue_mult;
+                        int g = *color_data++ * green_mult;
+                        int r = *color_data++ * red_mult;
+                        int a = *color_data++ * alpha_mult;
+
+                        *surf++ = (a << alpha_shift) | (b << blue_shift) | (g << green_shift) | (r << red_shift);
+                    }
+                }
+            } else if (bpp == 16) {
+                short* surf;
+                if (alpha) {
+                    surf = (short*)lock_desc.lpSurface;
+                    for (y = 0; y < height; ++y) {
+                        for (x = 0; x < width; ++x) {
+                            int b = *color_data++ * blue_mult;
+                            int g = *color_data++ * green_mult;
+                            int r = *color_data++ * red_mult;
+                            int a = *color_data++ * alpha_mult;
+
+                            *surf++ = (a << alpha_shift) | (b << blue_shift) | (g << green_shift) | (r << red_shift);
+                        }
+                    }
+                } else {
+                    surf = (short*)lock_desc.lpSurface;
+                    for (y = 0; y < height; ++y) {
+                        for (x = 0; x < width; ++x) {
+                            int b = *color_data++ * blue_mult;
+                            int g = *color_data++ * green_mult;
+                            int r = *color_data++ * red_mult;
+                            color_data++;
+
+                            *surf++ = (b << blue_shift) | (g << green_shift) | (r << red_shift);
+                        }
+                    }
+                }
+            }
+            break;
+        case 24:
+            if (bpp == 32) {
+                int* surf = (int*)lock_desc.lpSurface;
+                for (y = 0; y < height; ++y) {
+                    for (x = 0; x < width; ++x) {
+                        int b = *color_data++ * blue_mult;
+                        int g = *color_data++ * green_mult;
+                        int r = *color_data++ * red_mult;
+
+                        *surf++ = (b << blue_shift) | (g << green_shift) | (r << red_shift);
+                    }
+                }
+            } else if (bpp == 16) {
+                short* surf;
+                if (alpha) {
+                    surf = (short*)lock_desc.lpSurface;
+                    for (y = 0; y < height; ++y) {
+                        for (x = 0; x < width; ++x) {
+                            int r = *color_data++ * red_mult;
+                            int g = *color_data++ * green_mult;
+                            int b = *color_data++ * blue_mult;
+
+                            *surf++ = ((int)(128.0 / alpha_mult) << alpha_shift) | (b << blue_shift) | (g << green_shift) | (r << red_shift);
+                        }
+                    }
+                } else {
+                    surf = (short*)lock_desc.lpSurface;
+                    for (y = 0; y < height; ++y) {
+                        for (x = 0; x < width; ++x) {
+                            int b = *color_data++ * blue_mult;
+                            int g = *color_data++ * green_mult;
+                            int r = *color_data++ * red_mult;
+                            color_data++;
+
+                            *surf++ = (b << blue_shift) | (g << green_shift) | (r << red_shift);
+                        }
+                    }
+                }
+            }
+            break;
+        case 8:
+            switch(bpp) {
+                int* surf;
+                short* short_surf;
+                case 32:
+                    surf = (int*)lock_desc.lpSurface;
+                    if (alpha) {
+                        for (y = 0; y < height; ++y) {
+                            for (x = 0; x < width; ++x) {
+                                short cmap_idx = *color_data++;
+                                *surf++ = (255 << alpha_shift)
+                                    | ((int)(cmap[4 * cmap_idx] * blue_mult) << blue_shift)
+                                    | ((int)(cmap[4 * cmap_idx + 1] * green_mult) << green_shift)
+                                    | ((int)(cmap[4 * cmap_idx + 2] * red_mult) << red_shift);
+                            }
+                        }
+                    } else {
+                        for (y = 0; y < height; ++y) {
+                            for (x = 0; x < width; ++x) {
+                                short cmap_idx = *color_data++;
+                                *surf++ = ((int)(cmap[4 * cmap_idx] * blue_mult) << blue_shift)
+                                    | ((int)(cmap[4 * cmap_idx + 1] * green_mult) << green_shift)
+                                    | ((int)(cmap[4 * cmap_idx + 2] * red_mult) << red_shift);
+                            }
+                        }
+                    }
+                    break;
+                case 16:
+                    short_surf = (short*)lock_desc.lpSurface;
+                    if (alpha) {
+                        for (y = 0; y < height; ++y) {
+                            for (x = 0; x < width; ++x) {
+                                short cmap_idx = *color_data++;
+                                *short_surf++ = (255 << alpha_shift)
+                                    | ((int)(cmap[4 * cmap_idx] * blue_mult) << blue_shift)
+                                    | ((int)(cmap[4 * cmap_idx + 1] * green_mult) << green_shift)
+                                    | ((int)(cmap[4 * cmap_idx + 2] * red_mult) << red_shift);
+                            }
+                        }
+                    } else {
+                        for (y = 0; y < height; ++y) {
+                            for (x = 0; x < width; ++x) {
+                                short cmap_idx = *color_data++;
+                                *short_surf++ = ((int)(cmap[4 * cmap_idx] * blue_mult) << blue_shift)
+                                    | ((int)(cmap[4 * cmap_idx + 1] * green_mult) << green_shift)
+                                    | ((int)(cmap[4 * cmap_idx + 2] * red_mult) << red_shift);
+                            }
+                        }
+                    }
+                    break;
+                case 8:
+                    memcpy(surf_mem, color_data, width * height);
+                    break;
+            }
+            break;
+    }
+
+    res = surf->Unlock(NULL);
+    if (res) {
+        g_Log.DxErr("Unlocking Texture Surface", res);
+        goto err;
+    }
+
+    return 1;
+
+err:
+    if (palette) {
+        palette->Release();
+        palette = NULL;
+    }
+
+    return 0;
 }

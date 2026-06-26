@@ -67,6 +67,9 @@ int g_WindowCreated = 0;
 // GLOBAL: REDLINE 0x0059c808
 int g_WindowActive = 1;
 
+// GLOBAL: REDLINE 0x005A7FC8
+bool g_DemoSystemActive = false;
+
 // GLOBAL: REDLINE 0x005a7fd4
 class D3dRenderer* g_Direct3d;
 

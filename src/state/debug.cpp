@@ -8,6 +8,7 @@
 #include "../globals.h"
 #include "../render.h"
 #include "../pack.h"
+#include "../file.h"
 #include <mmsystem.h>
 #include <windows.h>
 #include <wingdi.h>
@@ -384,7 +385,7 @@ void settings_dialog_cmd(HWND dlg, int param, int param2, int param3) {
                 SendMessageA(list, LB_GETTEXT, sel, (LPARAM)buf);
                 g_ScreenWidth = atoi(buf);
                 g_ScreenHeight = atoi(&buf[5]);
-                g_ScreenWidth = atoi(&buf[10]);
+                g_ScreenBPP = atoi(&buf[10]);
             }
         }
         EndDialog(dlg, res);
@@ -602,65 +603,6 @@ int open_adv_settings(int nCmdShow) {
     return 1;
 }
 
-// FUNCTION: REDLINE 0x00417B1A
-void GetAssetFilesystemPath(const char* filename, char* unk, char* out) {
-    struct Locals {
-        char path[512];
-        char *last_slash;
-        char *dot;
-        char dir[64];
-        char ext[4];
-        bool unpacked;
-    } l;
-    l.unpacked = false;
-    *l.dir = 0;
-    l.dot = strrchr(filename, '.');
-    if (l.dot) {
-        memcpy(l.ext, l.dot + 1, 3);
-        l.ext[3] = NULL;
-        strupr(l.ext);
-        if (!strcmp(l.ext, "GEO") || !strcmp(l.ext, "GLD")) {
-            strcpy(l.dir, "geo\\");
-        } else if (!strcmp(l.ext, "BTF") || !strcmp(l.ext, "TGA")) {
-            strcpy(l.dir, "textures\\");
-        } else if (!strcmp(l.ext, "RSG")) {
-            strcpy(l.dir, "saved games\\");
-            l.unpacked = 1;
-        } else if (!strcmp(l.ext, "WAV")) {
-            strcpy(l.dir, "wav\\");
-        } else if (!strcmp(l.ext, "WLD")) {
-            strcpy(l.dir, "wld\\");
-        } else if (!strcmp(l.ext, "ANM")) {
-            strcpy(l.dir, "anm\\");
-        } else if (!strcmp(l.ext, "GGR")) {
-            strcpy(l.dir, "geo\\");
-        } else if (!strcmp(l.ext, "MOT") || !strcmp(l.ext, "SKL")) {
-            strcpy(l.dir, "motion\\");
-        } else if (!strcmp(l.ext, "THG")) {
-            // ???
-        } else if (!strcmp(l.ext, "EVT")) {
-            strcpy(l.dir, "events\\");
-        } else if (!strcmp(l.ext, "BMP")) {
-            strcpy(l.dir, "textures\\");
-        }
-    }
-
-    strcpy(out, unk);
-    if (out[strlen(out) - 1] != '\\')
-        strcat(out, "\\");
-    strcat(out, l.dir);
-    strcat(out, filename);
-    if (l.unpacked) {
-        strcpy(l.path, out);
-        l.last_slash = strrchr(l.path, '\\');
-        if (l.last_slash)
-            *l.last_slash = NULL;
-
-        // Create directory if non-existent (original passes a zero-length string instead of dir path)
-        if (GetFileAttributesA(l.last_slash) == -1)
-            CreateDirectoryA(l.path, NULL);
-    }
-}
 
 struct WorldHeader {
     char pad[10];
