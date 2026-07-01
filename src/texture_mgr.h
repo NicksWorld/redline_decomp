@@ -85,19 +85,20 @@ struct BitmapSlot {
     short height;
     short width;
     short bpp; // unsure
-    char pad2[4];
+    short flags;
+    char pad2[2];
     short unk;
     short unk2;
-    char pad3[2];
+    short unk3;
 };
 
 class BitmapHolder {
     public:
     char base_path[128];
     BitmapSlot* slots;
-    int unk2;
+    int used_mem; // Always treated as if 4bpp no mip?
     int unk3;
-    short unk4;
+    short bmp_count;
     short unk5;
     short slot_count;
     D3dRenderer* renderer;
@@ -111,8 +112,11 @@ class BitmapHolder {
     short LoadImageInnerInner(const char* path, short slot, short unk);
     short LoadImageInner(const char* path, short unk);
     short LoadImage(const char* path, short unk);
+
+    void UnloadImage(short slot);
 };
 
 void SetBitmapAssetPath(const char* path);
 
 short RedlineLoadImage(const char* path, short unk);
+void RedlineUnloadImage(short slot);

@@ -425,7 +425,6 @@ int Config::ParseOther(char *line) {
     } else {
         strcpy(l.v->name, l.sep);
     }
-    // TODO: switch
     switch (l.kind) {
         case 1:
             l.v->value.decimal = l.decimal;
@@ -487,8 +486,6 @@ int Config::ParseLine(char *line) {
     return ParseOther(line);
 }
 
-// FUNCTION: REDLINE 0x0043CBE5
-void Warn(const char *fmt, ...) {} // Left empty in build
 
 // FUNCTION: REDLINE 0x0043D90B
 void Config::ResetBinds() {
@@ -1475,9 +1472,9 @@ short g_ConnectPort = 0;
 char g_ConnectIP[128];
 
 // GLOBAL: REDLINE 0x005ce8ff
-bool g_ConnectRelated1;
+bool g_ConnectDirect;
 // GLOBAL: REDLINE 0x005ce900
-bool g_ConnectRelated2;
+bool g_ConnectAsHost;
 
 // FUNCTION: REDLINE 0x00441365
 void Config::ProcessConnect(char *val) {
@@ -1485,8 +1482,8 @@ void Config::ProcessConnect(char *val) {
         char *c;
         int i;
     } l;
-    g_ConnectRelated1 = true;
-    g_ConnectRelated2 = false;
+    g_ConnectDirect = true;
+    g_ConnectAsHost = false;
     l.i = 0;
     for (l.c = val; *l.c; ++l.c) {
         if (*l.c == ':') {
@@ -1501,8 +1498,8 @@ void Config::ProcessConnect(char *val) {
 
 // FUNCTION: REDLINE 0x00441439
 void Config::ProcessHost(char *val) {
-    g_ConnectRelated1 = true;
-    g_ConnectRelated2 = true;
+    g_ConnectDirect = true;
+    g_ConnectAsHost = true;
 }
 
 // FUNCTION: REDLINE 0x004413F0
@@ -1554,7 +1551,7 @@ bool Config::ProcessCmdline() {
             break;
         }
     }
-    if (g_ConnectRelated1 || g_LobbyEnabled) {
+    if (g_ConnectDirect || g_LobbyEnabled) {
         return true;
     }
     return false;

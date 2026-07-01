@@ -414,7 +414,31 @@ bool StateImpl::AV::Init(int next_state) {
     }
     if (UnkSomething() != 1)
         return 0;
-    while (true) {}
-    // TODO
+    // TODO: Init DirectInput
+    // TODO: Other keybinds call
     return true;
+}
+
+// FUNCTION: REDLINE 0x0053E2A0
+bool StateImpl::AV::Tick() {
+    return 1;
+}
+
+// FUNCTION: REDLINE 0x0053E2A7
+bool StateImpl::AV::EventTick() {
+    if (g_StateStartupComplete)
+        return 1;
+    StateNode* next = g_StateTree->Next(1);
+    if (!next)
+        return 0;
+    if (g_EngineState->QueueState(next->state_id) != next->state_id)
+        return 0;
+    g_StateStartupComplete = true;
+    return 1;
+}
+
+// FUNCTION: REDLINE 0x0053E369
+bool StateImpl::AV::Shutdown(int state) {
+    g_StateStartupComplete = true;
+    return 1;
 }

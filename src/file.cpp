@@ -9,7 +9,7 @@ FileContainer::FileContainer() {
     this->stream = NULL;
     this->out = NULL;
     this->data = NULL;
-    this->unk2 = 0;
+    this->line_ending = 0;
     this->size = 0;
     this->unk3 = 0;
 }
@@ -54,7 +54,7 @@ int FileContainer::ReadOpen(const char* name) {
 // FUNCTION: REDLINE 0x00417844
 int FileContainer::ReadFile(const char* name) {
     this->Clear();
-    this->unk2 = 0;
+    this->line_ending = 0;
     if (this->ReadOpen(name) == 0) return false;
 
     this->stream->seekg(0, ios::end);
@@ -76,7 +76,7 @@ int FileContainer::ReadFile(const char* name) {
 // FUNCTION: REDLINE 0x004175ea
 int FileContainer::ReadAsset(const char* name){
     this->Clear();
-    this->unk2 = 0;
+    this->line_ending = 0;
     if (g_unk == 0) {
         if(this->ReadOpen(name) == 0) {
             return false;
@@ -131,6 +131,59 @@ int FileContainer::Read(const char* name, char* buf, int size) {
     }
     this->Clear();
     return true;
+}
+
+// FUNCTION: REDLINE 0x00417920
+int FileContainer::ReadTextAsset(const char* name) {
+    if (!this->ReadAsset(name))
+        return 0;
+
+    unsigned int i = 0;
+    while (i < this->size) {
+        if (this->data[i] == '\n') {
+            this->line_ending = '\n';
+            break;
+        }
+        if (this->data[i++] == '\r') {
+            this->line_ending = '\r';
+            break;
+        }
+    }
+
+    return 1;
+}
+
+// FUNCTION: REDLINE 0x0041707C
+int FileContainer::ReadLine(unsigned int input_idx, char* out) {
+    int i = 0;
+    int should_continue;
+    do {
+        should_continue = 0;
+        do {
+            out[i++] = this->data[input_idx];
+            if (this->data[input_idx++] == this->line_ending) {
+                break;
+            }
+            if (input_idx >= this->size) {
+                ++i;
+                break;
+            }
+        } while (i != 0xFF);
+        out[i - 1] = NULL;
+        if (*out == '\n' && strlen(out) > 1)
+            strcpy(out, &out[1]);
+        while (*out == ' ' || *out == '\t') {
+            strcpy(out, &out[1]);
+        }
+
+        if (out[i - 2] == '\\') {
+            i -= 2;
+            if (input_idx < this->size)
+                should_continue = true;
+        }
+
+    } while (should_continue);
+    return input_idx;
 }
 
 

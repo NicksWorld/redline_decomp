@@ -3,9 +3,9 @@
 class FileContainer {
     public:
     char* data;
-    int size;
+    unsigned int size;
     int cursor;
-    int unk2;
+    int line_ending;
     int unk3;
     class ifstream* stream;
     char unk_pad[264];
@@ -18,6 +18,9 @@ class FileContainer {
     int ReadOpen(const char* name);
     int ReadFile(const char* name);
     int ReadAsset(const char* name);
+
+    int ReadTextAsset(const char* name);
+    int ReadLine(unsigned int unk, char* out);
 
     int Read(const char* name, char* buf, int size);
     void ReadBytes(void* data, size_t len);

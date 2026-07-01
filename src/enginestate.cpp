@@ -98,10 +98,10 @@ bool EngineState::SetupStates() {
     this->states[STATE_DEBUG]->shutdown = StateImpl::Debug::Shutdown;
     this->states[STATE_DEBUG]->flag = false;
 
-    this->states[STATE_INIT_AV]->event_tick = EventTickStub;
-    this->states[STATE_INIT_AV]->tick = TickStub;
+    this->states[STATE_INIT_AV]->event_tick = StateImpl::AV::EventTick;
+    this->states[STATE_INIT_AV]->tick = StateImpl::AV::Tick;
     this->states[STATE_INIT_AV]->init = StateImpl::AV::Init;
-    this->states[STATE_INIT_AV]->shutdown = ShutdownStub;
+    this->states[STATE_INIT_AV]->shutdown = StateImpl::AV::Shutdown;
     this->states[STATE_INIT_AV]->flag = false;
 
     this->states[STATE_INTRO]->event_tick = EventTickStub;
@@ -335,7 +335,9 @@ int EngineState::ChangeState(int state) {
     sprintf(msg, "   --- transition  %s to %s", orig, dest);
     g_Log.Debug(msg);
 
-    // TODO: Something about console enablement?
+    if (g_ConsoleEnabled) {
+        // TODO: Set state name in dialog
+    }
 
     if (this->states[this->active_state]->flag) {
         LockTick();

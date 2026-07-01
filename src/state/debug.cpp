@@ -20,7 +20,7 @@ bool StateImpl::Debug::Init(int prev_state) { return true; }
 
 // FUNCTION: REDLINE 0x0053AB6F
 bool StateImpl::Debug::Shutdown(int next_state) {
-    // TODO: Set unknown global
+    g_StateStartupComplete = false;
     return true;
 }
 
@@ -28,7 +28,7 @@ bool StateImpl::Debug::Shutdown(int next_state) {
 bool StateImpl::Debug::Tick() { return true; }
 
 // GLOBAL: REDLINE 0x005CD064
-bool g_DebugStartupComplete = false;
+bool g_StateStartupComplete = false;
 
 // GLOBAL: REDLINE 0x005ce70c
 char g_NextMap[128]; // Unsure if correct meaning
@@ -898,7 +898,7 @@ int open_console_setup(int nCmdShow) {
 // FUNCTION: REDLINE 0x0053A977
 bool StateImpl::Debug::EventTick() {
     int v5 = 1;
-    if (g_DebugStartupComplete)
+    if (g_StateStartupComplete)
         return true;
     bool res = g_Config->ProcessCmdline();
     g_QuickRun = 0;
@@ -951,6 +951,6 @@ bool StateImpl::Debug::EventTick() {
         return 0;
     if (g_EngineState->QueueState(next->state_id) != next->state_id)
         return 0;
-    g_DebugStartupComplete = true;
+    g_StateStartupComplete = true;
     return true;
 }

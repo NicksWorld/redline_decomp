@@ -50,6 +50,7 @@ extern bool (*g_EventTick)();
 extern bool g_ConsoleEnabled;
 extern bool g_LobbyEnabled;
 
+extern bool g_StateStartupComplete;
 
 extern bool g_unkBool;
 extern bool g_DemoSystemActive;
@@ -58,6 +59,9 @@ extern int g_WindowCreated;
 extern int g_WindowActive;
 
 extern bool g_PublicGame;
+
+extern bool g_ConnectDirect;
+extern bool g_ConnectAsHost;
 
 extern short g_SupportsBlend;
 extern short g_SupportsBlend2;

@@ -513,11 +513,11 @@ void TextureMgr::LoadTextures() {
 // FUNCTION: REDLINE 0x00417EA0
 BitmapHolder::BitmapHolder() {
     this->slot_count = 0;
-    this->unk4 = 0;
+    this->bmp_count = 0;
     this->renderer = NULL;
     this->slots = NULL;
     this->base_path[0] = NULL;
-    this->unk2 = 0;
+    this->used_mem = 0;
     this->unk3 = 0;
     this->unk5 = 0;
 }
@@ -556,22 +556,52 @@ void BitmapHolder::AllocSlots(short count) {
     }
     this->slots = new_slots;
     for (short i = 0; i < count; ++i) {
-        // Writes are off 80 and 64
-        // this->slots[this->slot_count + i].unk0 = 0;
-        // this->slots[this->slot_count + i].unk1 = 0;
+        this->slots[this->slot_count + i].unk3 = 0;
+        this->slots[this->slot_count + i].surf = NULL;
     }
     this->slot_count += count;
 }
 
 // STUB: REDLINE 0x004186C7
-short BitmapHolder::FindImage(const char* path) {
+short BitmapHolder::FindImage(const char* name) {
     for (short i = 0; i < this->slot_count; ++i) {
-        // TODO: Check for match
-        if (false) {
+        if (this->slots[i].unk3 && !this->slots[i].unk && !strcmp(this->slots[i].name, name)) {
             return i;
         }
     }
     return -1;
+}
+
+// FUNCTION: REDLINE 0x0045796D
+int GetFormattedColor(LPDIRECTDRAWSURFACE4 surf, int color) {
+    int ret = -1;
+
+    DDSURFACEDESC2 desc;
+    memset(&desc, 0, sizeof(desc));
+    desc.dwSize = sizeof(desc);
+
+    HDC hdc;
+    int pixel;
+    if (color != -1 && !surf->GetDC(&hdc)) {
+        pixel = GetPixel(hdc, 0, 0);
+        SetPixel(hdc, 0, 0, color);
+        surf->ReleaseDC(hdc);
+    }
+
+    int res;
+    do {
+        res = surf->Lock(NULL, &desc, 0, NULL);
+    } while ( res == DDERR_WASSTILLDRAWING);
+
+    if (!res) {
+        ret = *((int*)desc.lpSurface) & ((1 << desc.ddpfPixelFormat.dwRGBBitCount) - 1);
+        surf->Unlock(NULL);
+    }
+    if (color == -1 && !surf->GetDC(&hdc)) {
+        SetPixel(hdc, 0, 0, pixel);
+        surf->ReleaseDC(hdc);
+    }
+    return ret;
 }
 
 // FUNCTION: REDLINE 0x0041885E
@@ -585,9 +615,23 @@ short BitmapHolder::LoadImageInnerInner(const char* name, short slot, short unk)
         return -1;
 
     if ((unk & 2) != 0) {
-        // TODO
+        int color = GetFormattedColor(this->slots[slot].surf, -1);
+        DDCOLORKEY colorkey;
+        colorkey.dwColorSpaceHighValue = color;
+        colorkey.dwColorSpaceLowValue = color;
+        int res = this->slots[slot].surf->SetColorKey(8, &colorkey);
     }
-    // TODO
+    this->slots[slot].flags = unk;
+
+    if (strlen(name) > 63) {
+        char buf[128];
+        sprintf(buf, "*Error: BitmapHolder: texture name must be <64 characters (%s)", name);
+        g_Log.Debug(buf);
+    }
+
+    this->used_mem += 4 * this->slots[slot].width * this->slots[slot].height;
+    strncpy(this->slots[slot].name, name, 63);
+    return slot;
 }
 
 // FUNCTION: REDLINE 0x0041875D
@@ -595,21 +639,22 @@ short BitmapHolder::LoadImageInner(const char* path, short unk) {
     short free_slot = -1;
     if (this->renderer) {
         for (short i = 0; i < this->slot_count; ++i) {
-            // TODO: Check to see if slot is filled?
-            if (false) {
+            if (!this->slots[i].unk3) {
                 free_slot = i;
                 break;
             }
         }
+        if (free_slot < 0) {
+            free_slot = this->slot_count;
+            this->AllocSlots(100);
+        }
+        if ((this->LoadImageInnerInner(path, free_slot, unk) & 0x8000) != 0)
+            return -1;
+        this->slots[free_slot].unk3 = 3;
+        this->slots[free_slot].unk = 0;
+        ++this->bmp_count;
     }
-    if (free_slot < 0) {
-        free_slot = this->slot_count;
-        this->AllocSlots(100);
-    }
-    if ((this->LoadImageInnerInner(path, free_slot, unk) & 0x8000) != 0)
-        return -1;
-    // TODO: Set some slot fields
-    ++this->unk4;
+    return free_slot;
 }
 
 // FUNCTION: REDLINE 0x00418651
@@ -629,4 +674,31 @@ short RedlineLoadImage(const char* path, short unk) {
         return g_BitmapHolder->LoadImage(path, unk);
     }
     return 0;
+}
+
+// FUNCTION: REDLINE 0x00418ED2
+void BitmapHolder::UnloadImage(short slot) {
+    if (slot >= 0 && slot < this->slot_count && this->slots[slot].unk3) {
+        if (this->slots[slot].surf) {
+            this->slots[slot].surf->Release();
+            this->slots[slot].surf = NULL;
+        }
+        if (this->slots[slot].palette) {
+            this->slots[slot].palette->Release();
+            this->slots[slot].palette = NULL;
+        }
+        if (this->slots[slot].unk) {
+            this->unk3 -= 4 * this->slots[slot].width * this->slots[slot].height;
+            --this->unk5;
+        } else {
+            this->used_mem -= 4 * this->slots[slot].width * this->slots[slot].height;
+        }
+        this->slots[slot].unk3 = 0;
+        --this->bmp_count;
+    }
+}
+
+// FUNCTION: REDLINE 0x0048EF9E
+void RedlineUnloadImage(short slot) {
+    g_BitmapHolder->UnloadImage(slot);
 }

@@ -16,3 +16,4 @@ class Log {
 };
 
 void SomeDebug(const char* msg);
+void Warn(const char *fmt, ...);

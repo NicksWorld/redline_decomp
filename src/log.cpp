@@ -78,7 +78,8 @@ cleanup:
 // FUNCTION: REDLINE 0x004a94a1
 void Log::Debug(const char *msg) {
     // Really, this method is completely empty
-    MessageBoxA(NULL, msg, NULL, MB_ICONWARNING);
+    // MessageBoxA(NULL, msg, NULL, MB_ICONWARNING);
+    this->Print(msg);
 }
 
 // STUB: REDLINE 0x0043CBE0
@@ -103,6 +104,18 @@ void Log::D3dErr(const char *msg, int err) {
     this->D3dErrToString(err, err_name);
     sprintf(buf, "*Error: %s (%s)", msg, err_name);
     this->Debug(buf);
+}
+
+// FUNCTION: REDLINE 0x0043CBE5
+void Warn(const char *fmt, ...) {
+    // Left empty in build
+    char buf[256];
+    va_list args;
+    va_start(args, fmt);
+    _vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+
+    g_Log.Debug(buf);
 }
 
 #include "ddraw.h"
