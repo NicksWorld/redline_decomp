@@ -14,6 +14,8 @@ extern class D3dRenderer * g_Direct3d;
 extern class TextureMgr * g_TextureMgr;
 extern class BitmapHolder *g_BitmapHolder;
 extern class CInterface* g_Interface;
+extern class CdAudio* g_CdAudio;
+extern class AudioManager* g_Audio;
 
 // GameData script (rough, sizing wrong)
 struct GameData {

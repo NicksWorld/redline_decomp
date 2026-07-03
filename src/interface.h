@@ -43,13 +43,18 @@ class CInterface {
     GraphicWidget* unk_graphic;
     GraphicWidget* mouse_graphic;
     GraphicWidget* bg_graphic;
-    char pad0[132];
+    char unk0;
+    char unk1;
+    char pad0[130];
     Font fonts[11];
     short font_count;
     ImageRef images[375];
     unsigned short image_count;
     int arr[600];
-    char pad2[728];
+    char pad2[96];
+    short unk2;
+    short unk3;
+    char pad3[628];
 
     CInterface();
 
@@ -65,9 +70,9 @@ class Widget {
     // TODO: 10 virtual methods
     virtual void SetDescription(const char* desc); // vtable[5];
     Widget();
-    int unk_0;
-    int unk_4;
-    char pad[4];
+    float unk_0;
+    float unk_4;
+    float unk_8;
     short unk_12;
     short unk_14;
     short width;
@@ -91,6 +96,8 @@ class Widget {
     short unk_122;
     int unk_124;
     int unk_128;
+
+    void SetUnkFloats(short a, short b, short c);
 };
 
 struct GraphicImageSlot {

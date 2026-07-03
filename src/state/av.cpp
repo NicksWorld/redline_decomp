@@ -14,6 +14,8 @@
 #include "../log.h"
 #include "../render.h"
 #include "../texture_mgr.h"
+#include "../cdaudio.h"
+#include "../audio.h"
 
 #include <stdio.h>
 
@@ -399,6 +401,12 @@ int UnkSomething() {
         if (!g_Interface->InitGraphics()) {
             g_Log.Debug("*Error - Init interface graphics failed.");
             return 0;
+        }
+
+        g_CdAudio = new CdAudio();
+        g_Audio = new AudioManager();
+        if (!g_ConsoleEnabled && !g_Audio->Init(g_soundChannels)) {
+            g_Log.Print("*Error: Failed to initialize DirectSound - sound playback disabled");
         }
     }
     // TODO

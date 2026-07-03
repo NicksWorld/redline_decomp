@@ -23,6 +23,8 @@ add_executable(redline WIN32
     src/render.cpp
     src/texture_mgr.cpp
     src/interface.cpp
+    src/cdaudio.cpp
+    src/audio.cpp
     thirdparty/3dnow/amddcpu.cpp
 
     # Game state methods
@@ -37,7 +39,7 @@ add_executable(redline WIN32
 target_link_libraries(redline PRIVATE winmm.lib)
 target_include_directories(redline PRIVATE res)
 
-target_link_libraries(redline PRIVATE ddraw.lib dxguid.lib)
+target_link_libraries(redline PRIVATE ddraw.lib dsound.lib dxguid.lib)
 
 target_link_directories(redline PRIVATE thirdparty/smacker)
 target_link_libraries(redline PRIVATE Smackw32.lib)

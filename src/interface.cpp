@@ -28,23 +28,30 @@ CInterface::CInterface() {
 
 // FUNCTION: REDLINE 0x004A40F2
 int CInterface::InitGraphics() {
+    // TODO: There is some dead code (inlined?) present that makes this not match
     if (!this->LoadFont("mini8-NM"))
         return 0;
     if (!this->LoadFont("newCop16-NM"))
         return 0;
     if (!this->LoadFont("mini8Blue-NM"))
         return 0;
-    // TODO: Graphic initialization (background, mouse, etc.)
     this->unk_graphic = new GraphicWidget(this);
     this->mouse_graphic = new GraphicWidget(this);
     this->mouse_graphic->SetImage("mouse", 0, 0, 16, 16, 2, 0, 0);
-    // TODO
+
+    this->unk2 = 624;
+    this->unk3 = 464;
+    this->unk0 = 0;
+
     this->bg_graphic = new GraphicWidget(this);
+
     this->bg_graphic->unk_122 = 0;
-    // TODO: Set some floats on bg_graphic?
+    this->bg_graphic->SetUnkFloats(0, 0, 0);
     this->bg_graphic->SetDescription("Background Image");
     this->bg_graphic->unk_92 = 0;
     this->bg_graphic->unk_120 = 0;
+
+    this->unk1 = 0; // Weird alignment, maybe supposed to be string null term with wrong index?
     return 1;
 }
 
@@ -270,6 +277,13 @@ void Widget::SetDescription(const char* desc) {
         len = 63;
     memcpy(this->desc, desc, len);
     this->desc[len] = 0;
+}
+
+// FUNCTION: REDLINE 0x004A0242
+void Widget::SetUnkFloats(short a, short b, short c) {
+    this->unk_0 = a;
+    this->unk_4 = b;
+    this->unk_8 = c;
 }
 
 // FUNCTION: REDLINE 0x004A15DB

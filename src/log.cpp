@@ -106,6 +106,15 @@ void Log::D3dErr(const char *msg, int err) {
     this->Debug(buf);
 }
 
+// FUNCTION: REDLINE 0x004A974A
+void Log::DsErr(const char *msg, int err) {
+    char err_name[256];
+    char buf[256];
+    this->DsErrToString(err, err_name);
+    sprintf(buf, "*Error: %s (%s)", msg, err_name);
+    this->Debug(buf);
+}
+
 // FUNCTION: REDLINE 0x0043CBE5
 void Warn(const char *fmt, ...) {
     // Left empty in build
@@ -556,6 +565,60 @@ void Log::D3dErrToString(int err, char *buf) {
         break;
     case D3DERR_SCENE_END_FAILED:
         sprintf(buf, "D3DERR_SCENE_END_FAILED");
+        break;
+    default:
+        sprintf(buf, "Unknown Error");
+        break;
+    }
+}
+
+#include <dsound.h>
+void Log::DsErrToString(int err, char* buf) {
+    switch(err) {
+    case DSERR_ALLOCATED:
+        sprintf(buf, "DSERR_ALLOCATED");
+        break;
+    case DSERR_CONTROLUNAVAIL:
+        sprintf(buf, "DSERR_CONTROLUNAVAIL");
+        break;
+    case DSERR_INVALIDPARAM:
+        sprintf(buf, "DSERR_INVALIDPARAM");
+        break;
+    case DSERR_INVALIDCALL:
+        sprintf(buf, "DSERR_INVALIDCALL");
+        break;
+    case DSERR_GENERIC:
+        sprintf(buf, "DSERR_GENERIC");
+        break;
+    case DSERR_PRIOLEVELNEEDED:
+        sprintf(buf, "DSERR_PRIOLEVELNEEDED");
+        break;
+    case DSERR_OUTOFMEMORY:
+        sprintf(buf, "DSERR_OUTOFMEMORY");
+        break;
+    case DSERR_BADFORMAT:
+        sprintf(buf, "DSERR_BADFORMAT");
+        break;
+    case DSERR_UNSUPPORTED:
+        sprintf(buf, "DSERR_UNSUPPORTED");
+        break;
+    case DSERR_NODRIVER:
+        sprintf(buf, "DSERR_NODRIVER");
+        break;
+    case DSERR_ALREADYINITIALIZED:
+        sprintf(buf, "DSERR_ALREADYINITIALIZED");
+        break;
+    case DSERR_NOAGGREGATION:
+        sprintf(buf, "DSERR_NOAGGREGATION");
+        break;
+    case DSERR_BUFFERLOST:
+        sprintf(buf, "DSERR_BUFFERLOST");
+        break;
+    case DSERR_OTHERAPPHASPRIO:
+        sprintf(buf, "DSERR_OTHERAPPHASPRIO");
+        break;
+    case DSERR_UNINITIALIZED:
+        sprintf(buf, "DSERR_UNINITIALIZED");
         break;
     default:
         sprintf(buf, "Unknown Error");
