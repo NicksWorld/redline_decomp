@@ -16,7 +16,7 @@ CInterface::CInterface() {
     // TODO
     short i;
     for ( i = 0; i < 600; ++i )
-        this->arr[i] = 0;
+        this->controls[i] = NULL;
     for ( i = 0; i < 375; ++i ) {
         this->images[i].idx = -1;
         this->images[i].refcount = 0;
@@ -172,6 +172,10 @@ bool LoadFontDef(const char* name, Font* font) {
     return 1;
 }
 
+
+// Darn you windows!
+#undef LoadImage
+
 // FUNCTION: REDLINE 0x004A4307
 int CInterface::LoadFont(const char* name) {
     if (this->font_count >= 10)
@@ -189,9 +193,6 @@ int CInterface::LoadFont(const char* name) {
     ++this->font_count;
     return 1;
 }
-
-// Darn you windows!
-#undef LoadImage
 
 // FUNCTION: REDLINE 0x004A45FA
 void CInterface::ReleaseImage(short slot) {
@@ -247,6 +248,59 @@ short CInterface::LoadImage(const char* name, short unk) {
     return idx;
 }
 
+// FUNCTION: REDLINE 0x004A45CE
+short CInterface::GetImageHandle(short img) {
+    if (img < 0)
+        return 0;
+    return this->images[img].idx;
+}
+
+// FUNCTION: REDLINE 0x004A4AE8
+short CInterface::AddControl(Widget* widget) {
+    if (this->control_count < 600) {
+        for (short i = 0; i < 600; ++i) {
+            if (!this->controls[i]) {
+                this->controls[i] = widget;
+                this->control_count++;
+                return i;
+            }
+        }
+    }
+    SomeDebug("*ERROR - Interface - Maximum controls reached");
+    return -1;
+}
+
+// FUNCTION: REDLINE 0x004A481D
+void CInterface::RemoveControl(Widget* widget) {
+    if (!widget)
+        return;
+
+    for (short i = 0; i < 600; ++i) {
+        if (this->controls[i] == widget) {
+            if (this->controls[i]) {
+                delete this->controls[i]; // TODO: Might have had an additional null check?
+            }
+            this->controls[i] = NULL;
+            --this->control_count;
+            return;
+        }
+    }
+}
+
+// FUNCTION: REDLINE 0x0049FF26
+Widget* CreateWidget(int type, CInterface* gui) {
+    Widget* widget = NULL;
+    if (!gui)
+        gui = g_Interface;
+    switch(type) {
+        // TODO: 0-6 are valid
+        case WIDGET_GRAPHIC:
+            widget = new GraphicWidget(gui);
+            break;
+    }
+    return widget;
+}
+
 // FUNCTION: REDLINE 0x004A0163
 Widget::Widget() {
     // this->vtable = (void **)&off_58660C;
@@ -295,6 +349,41 @@ GraphicWidget::GraphicWidget(CInterface* ui) {
     this->fil_4 = 2;
 }
 
+// FUNCTION: REDLINE 0x004A59EE
+void LoadInterfaceImage(short unk, short unk2, RECT* rect, short img_idx, CInterface* ui) {
+    CInterface* gui;
+    if (!ui) {
+        gui = g_Interface;
+    } else {
+        gui = ui;
+    }
+
+    short handle = gui->GetImageHandle(img_idx);
+    BitmapHolderLoad(handle, unk, unk2, rect);
+}
+
+// FUNCTION: REDLINE 0x004A1B73
+short GraphicWidget::LoadResources(int unk) {
+    if (!unk && !this->unk_92 && !this->unk_90)
+        return 0;
+    if (this->unk_114 < 0 || this->slots[this->unk_114].img == -1)
+        return 0;
+
+    LoadInterfaceImage(
+            this->slots[this->unk_114].unk6 + this->unk_0,
+            this->slots[this->unk_114].unk7 + this->unk_4,
+            &this->slots[this->unk_114].rect,
+            this->slots[this->unk_114].img,
+            this->ui);
+    this->unk_12 = this->slots[this->unk_114].unk6 + this->unk_0;
+    this->unk_14 = this->slots[this->unk_114].unk7 + this->unk_4;
+
+    // TODO LOWORD of width and height... are they shorts?
+    this->width = LOWORD(this->slots[this->unk_114].rect.right) + this->unk_12;
+    this->width = LOWORD(this->slots[this->unk_114].rect.bottom) + this->unk_14;
+    return this->unk_90;
+}
+
 // FUNCTION: REDLINE 0x004A1636
 void GraphicWidget::AllocImageSlots(short count) {
     struct Locals {
@@ -310,10 +399,10 @@ void GraphicWidget::AllocImageSlots(short count) {
     }
     for ( l.i = this->slot_capacity; l.i < this->slot_capacity + count; ++l.i) {
         l.alloc[l.i].img = -1;
-        l.alloc[l.i].unk2 = 0;
-        l.alloc[l.i].height = 0;
-        l.alloc[l.i].unk = 0;
-        l.alloc[l.i].width = 0;
+        l.alloc[l.i].rect.top = 0;
+        l.alloc[l.i].rect.bottom = 0;
+        l.alloc[l.i].rect.left = 0;
+        l.alloc[l.i].rect.right = 0;
         l.alloc[l.i].unk6 = 0;
         l.alloc[l.i].unk7 = 0;
     }
@@ -336,10 +425,10 @@ bool GraphicWidget::SetImage(const char* name, short unk, short unk2, short widt
     if (img < 0)
         return 0;
 
-    this->slots[this->slot_count].unk = unk;
-    this->slots[this->slot_count].unk2 = unk2;
-    this->slots[this->slot_count].width = width;
-    this->slots[this->slot_count].height = height;
+    this->slots[this->slot_count].rect.left = unk;
+    this->slots[this->slot_count].rect.top = unk2;
+    this->slots[this->slot_count].rect.right = width;
+    this->slots[this->slot_count].rect.bottom = height;
     this->slots[this->slot_count].unk6 = unk4;
     this->slots[this->slot_count].unk7 = unk5;
     this->slots[this->slot_count].img = img;
@@ -363,4 +452,13 @@ void GraphicWidget::UnloadImages() {
     }
     this->unk_114 = 0;
     this->slot_count = 0;
+}
+
+
+// FUNCTION: REDLINE 0x004A4CC9
+void CInterface::Render(short unk) {
+    if (this->unk0) {
+        this->bg_graphic->LoadResources(1);
+    }
+    // TODO
 }

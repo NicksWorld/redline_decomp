@@ -16,6 +16,7 @@
 #include "../texture_mgr.h"
 #include "../cdaudio.h"
 #include "../audio.h"
+#include "../keybinds.h"
 
 #include <stdio.h>
 
@@ -408,8 +409,15 @@ int UnkSomething() {
         if (!g_ConsoleEnabled && !g_Audio->Init(g_soundChannels)) {
             g_Log.Print("*Error: Failed to initialize DirectSound - sound playback disabled");
         }
+
+        // TODO: Unk 0x005A8F14
+        // TODO: Unk 0x005A8028
+        // TODO: Unk 0x005A8018
+        // TODO: Unk (vector?) 0x005C3F68
+        // TODO: Unk 0x005C3F64
+        // TODO: Unk 0x005C7538
+        // TODO: Sqrt LUT 0x005A52D0 (within function call)
     }
-    // TODO
     return 1;
 }
 
@@ -422,8 +430,9 @@ bool StateImpl::AV::Init(int next_state) {
     }
     if (UnkSomething() != 1)
         return 0;
-    // TODO: Init DirectInput
-    // TODO: Other keybinds call
+    if (!g_ConsoleEnabled && !InitDirectInput())
+        return 0;
+    UnacquireInput();
     return true;
 }
 

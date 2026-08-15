@@ -1,5 +1,7 @@
 #pragma once
 
+#include <dinput.h>
+
 enum Key {
     KEY_ESC = 1,
     KEY_1 = 2,
@@ -228,7 +230,56 @@ char *GetMbuttonName(int idx);
 char *GetJoybuttonName(int idx);
 char *GetJoyhatName(int idx);
 
-// Structure size isn't correct *yet*
+bool InitDirectInput();
+void UnacquireInput();
+
+// Exact size unknown
+class InputDevice {
+    // vtable 0x005864B4
+    public:
+    InputDevice();
+
+    virtual ~InputDevice(); // vtable[0];
+    virtual int Init(const char* name, HWND window); // vtable[1];
+    virtual bool Unacquire(); // vtable[3];
+
+    char name[128];
+    bool acquired;
+    IDirectInputDevice2A* dev;
+};
+
+// vtable 0x0058655C
+class MouseDevice : public InputDevice {
+    public:
+    virtual int Init(const char* name, HWND window);
+};
+
+// vtable 0x0058653C
+class JoystickDevice : public InputDevice {
+    public:
+    virtual int Init(const char* name, HWND window);
+    char joy_pad[80];
+    bool joy_configured; // if the joystick range/deadzone was successfully configured
+    bool multi_pov;
+};
+
+// vtable 0x005864F8
+class GamepadDevice : public JoystickDevice {
+    public:
+    virtual int Init(const char* name, HWND window);
+    bool unk0;
+    bool unk1;
+    int unk2;
+    int unk3;
+    int unk4;
+};
+
+// vtable 0x005864D8
+class KeyboardDevice : public InputDevice {
+    public:
+    virtual int Init(const char* name, HWND window);
+};
+
 class Keybinds {
     // Key -> action map?
     int key_map[281];
@@ -244,6 +295,16 @@ class Keybinds {
     char *joybutton_names[13];
     char *joyhat_names[9];
     char *action_names[64];
+
+    int unk;
+    LPDIRECTINPUTA dinput;
+    InputDevice** input_devices;
+    int input_device_count;
+    int input_devices_max;
+
+    float mouse_sens_foot;
+    float joy_sens_horiz;
+    float joy_sens_vert;
 
   public:
     Keybinds();
@@ -286,4 +347,10 @@ class Keybinds {
     int InvalidMbuttonIndex(int idx);
     int InvalidJoybuttonIndex(int idx);
     int InvalidJoyhatIndex(int idx);
+
+    int InitDirectInput();
+    int DeinitDirectInput();
+    void AddInputDevice(InputDevice* dev, GUID guid, const char* dev_name, int unk);
+
+    void UnacquireInput();
 };

@@ -6,8 +6,8 @@
 #undef LoadImage
 
 #include "file.h"
-
 struct BitmapSlot;
+struct GraphicImageSlot;
 
 struct Device {
     GUID* guid;
@@ -216,6 +216,7 @@ class D3dRenderer : public Renderer {
     void ClearViewport(short mode);
     int CreateViewportMaterials();
     int SetViewportMaterial(unsigned char r, unsigned char b, unsigned char g);
+    bool BlitSurface(LPDIRECTDRAWSURFACE4 surf, LPRECT dst_rect, LPRECT src_rect, unsigned short flags);
     void SetRenderState();
     void QueryMemory();
     int GetFreeTextureMemory();

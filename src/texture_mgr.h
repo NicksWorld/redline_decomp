@@ -4,6 +4,7 @@
 #include <ddraw.h>
 
 #include "render.h"
+#include "interface.h"
 #undef LoadImage
 
 struct Tmp {
@@ -113,10 +114,14 @@ class BitmapHolder {
     short LoadImageInner(const char* path, short unk);
     short LoadImage(const char* path, short unk);
 
+    void LoadSlot(short handle, short unk, short unk2, RECT* rect);
+
     void UnloadImage(short slot);
 };
 
 void SetBitmapAssetPath(const char* path);
+
+void BitmapHolderLoad(short handle, short unk, short unk2, RECT* rect);
 
 short RedlineLoadImage(const char* path, short unk);
 void RedlineUnloadImage(short slot);

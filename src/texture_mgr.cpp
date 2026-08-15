@@ -702,3 +702,26 @@ void BitmapHolder::UnloadImage(short slot) {
 void RedlineUnloadImage(short slot) {
     g_BitmapHolder->UnloadImage(slot);
 }
+
+// FUNCTION: REDLINE 0x0048EFB5
+void BitmapHolderLoad(short handle, short unk, short unk2, RECT* rect) {
+    g_BitmapHolder->LoadSlot(handle, unk, unk2, rect);
+}
+
+// FUNCTION: REDLINE 0x00419557
+void BitmapHolder::LoadSlot(short handle, short unk, short unk2, RECT* rect) {
+    if (this->renderer && this->slots) {
+        int h = rect->bottom - rect->top;
+        int w = rect->right - rect->left;
+        RECT r;
+        r.top = unk2;
+        r.bottom = h + unk2;
+        r.left = unk;
+        r.right = w + unk;
+        if (!this->renderer->BlitSurface(this->slots[handle].surf, &r, rect, this->slots[handle].flags)) {
+            char buf[128];
+            sprintf(buf, "  bitmap: %s", this->slots[handle].name);
+            g_Log.Debug(buf);
+        }
+    }
+}

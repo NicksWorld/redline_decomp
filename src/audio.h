@@ -12,6 +12,8 @@ struct ListenerInfo {
 
     // Velocity
     float velX, velY, velZ;
+
+    char pad2[24];
 };
 
 struct ChannelData {
@@ -43,10 +45,10 @@ class AudioManager {
     WAVEFORMATEX buf_fmt;
     IDirectSound3DListener* listener;
     ListenerInfo listener_data;
-    char pad2[42];
+    char pad2[24];
     ChannelData* channel_data;
-    short channel_count;
-    short channel_count_other;
+    unsigned short channel_count;
+    unsigned short channel_count_other;
     SoundBuffer sound_buffers[32];
     char pad3[10016];
 

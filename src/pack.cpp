@@ -257,15 +257,19 @@ int AssetManager::Get(const char* name, char** buffer, int to_read) {
 
 // FUNCTION: REDLINE 0x004AACD6
 int AssetManager::GetEntryIdx(const char* name) {
-    int entry_idx = -1;
-    for (unsigned int i = 0; i < this->pack_count; ++i) {
-        entry_idx = this->packs[i].pack->Find(name);
-        if (entry_idx >= 0) {
-            entry_idx += this->packs[i].base_entry_idx;
+    struct Locals {
+        int entry_idx;
+        unsigned int i;
+    } l;
+    l.entry_idx = -1;
+    for ( l.i = 0; l.i < this->pack_count; ++l.i) {
+        l.entry_idx = this->packs[l.i].pack->Find(name);
+        if (l.entry_idx >= 0) {
+            l.entry_idx += this->packs[l.i].base_entry_idx;
             break;
         }
     }
-    return entry_idx;
+    return l.entry_idx;
 }
 
 // FUNCTION: REDLINE 0x004AAD40

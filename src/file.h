@@ -26,22 +26,6 @@ class FileContainer {
     void ReadBytes(void* data, size_t len);
 };
 
-// TODO: Remove, for reference only
-// struct TgaHeader {
-//     char  idlength; // 0
-//     char  cmap_type; // 1
-//     char  data_type; // 2
-//     short cmap_origin; // 3
-//     short cmap_length; // 5
-//     char  cmap_depth; // 7
-//     short x_origin; // 8
-//     short y_origin; // 10
-//     short width; // 12
-//     short height; // 14
-//     char  bpp; // 16
-//     char  desc; // 17
-// };
-
 class ImageFileContainer : FileContainer {
     public:
     short height;

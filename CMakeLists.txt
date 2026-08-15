@@ -39,7 +39,7 @@ add_executable(redline WIN32
 target_link_libraries(redline PRIVATE winmm.lib)
 target_include_directories(redline PRIVATE res)
 
-target_link_libraries(redline PRIVATE ddraw.lib dsound.lib dxguid.lib)
+target_link_libraries(redline PRIVATE ddraw.lib dsound.lib dinput.lib dxguid.lib)
 
 target_link_directories(redline PRIVATE thirdparty/smacker)
 target_link_libraries(redline PRIVATE Smackw32.lib)

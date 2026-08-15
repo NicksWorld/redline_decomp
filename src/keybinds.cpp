@@ -1,6 +1,7 @@
 #include "keybinds.h"
 
 #include <windows.h>
+#include <dinput.h>
 
 // REMOVE imports
 #include "globals.h"
@@ -102,6 +103,11 @@ Keybinds::Keybinds() {
     memset(this->action_map, 0, sizeof(this->action_map));
 
     // TODO: Set values in unknown segments
+    this->input_devices = NULL;
+    this->input_device_count = 0;
+    this->input_devices_max = 32;
+    this->unk = 0;
+    this->dinput = NULL;
 
     this->Init();
 }
@@ -110,7 +116,6 @@ Keybinds::Keybinds() {
 int Keybinds::KeyToInput(int key) {
     return this->key_to_scancode[key];
 }
-
 
 // FUNCTION: REDLINE 0x0043C9B2
 int BindKey(int key, int action) {
@@ -590,4 +595,313 @@ char* Keybinds::JoyhatName(int idx) {
 int Keybinds::InvalidJoyhatIndex(int idx) {
     if (idx < 0 || idx >= 9) return true;
     return false;
+}
+
+// FUNCTION: REDLINE 0x00495200
+InputDevice::InputDevice() {
+    // TODO
+}
+
+// SYNTHETIC: REDLINE 0x00496A30
+// InputDevice::ScalarDeletingDestructor
+
+// FUNCTION: REDLINE 0x0049522E
+InputDevice::~InputDevice() {
+    if (this->acquired)
+        this->Unacquire();
+    if (this->dev) {
+        this->dev->Release();
+        this->dev = NULL;
+    }
+}
+
+// FUNCTION: REDLINE 0x00495354
+int InputDevice::Init(const char* name, HWND window) {
+    if (name) {
+        if (strlen(name) >= 128) {
+            strncpy(this->name, name, 126);
+            this->name[127] = 0;
+        } else {
+            strcpy(this->name, name);
+        }
+    }
+    return 0;
+}
+
+// FUNCTION: REDLINE 0x0049573F
+int MouseDevice::Init(const char* name, HWND window) {
+    InputDevice::Init(name, window);
+    int res;
+    if (g_DebugMouse) {
+        res = this->dev->SetCooperativeLevel(window, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
+    } else {
+        res = this->dev->SetCooperativeLevel(window, DISCL_FOREGROUND | DISCL_EXCLUSIVE);
+    }
+    if (res)
+        return 1;
+
+    res = this->dev->SetDataFormat(&c_dfDIMouse); // TODO: Verify format
+
+    if (res)
+        return 1;
+    return 0;
+}
+
+// FUNCTION: REDLINE 0x00495B87
+int JoystickDevice::Init(const char* name, HWND window) {
+    InputDevice::Init(name, window);
+
+    int res = this->dev->SetCooperativeLevel(window, DISCL_BACKGROUND | DISCL_EXCLUSIVE);
+    if (res)
+        return 1;
+    res = this->dev->SetDataFormat(&c_dfDIJoystick); // TODO: Very uncertain of format
+    if (res)
+        return 1;
+
+    DIPROPRANGE range;
+    range.diph.dwSize = sizeof(range);
+    range.diph.dwHeaderSize = sizeof(range.diph);
+    range.diph.dwObj = 0;
+    range.diph.dwHow = 1;
+    range.lMin = -127;
+    range.lMax = 127;
+    res = this->dev->SetProperty(DIPROP_RANGE, &range.diph);
+    if (res)
+        return 1;
+
+    range.diph.dwSize = sizeof(range);
+    range.diph.dwHeaderSize = sizeof(range.diph);
+    range.diph.dwObj = 4;
+    range.diph.dwHow = 1;
+    range.lMin = -127;
+    range.lMax = 127;
+    res = this->dev->SetProperty(DIPROP_RANGE, &range.diph);
+    if (res)
+        return 1;
+
+    range.diph.dwSize = sizeof(range);
+    range.diph.dwHeaderSize = sizeof(range.diph);
+    range.diph.dwObj = 8;
+    range.diph.dwHow = 1;
+    range.lMin = -127;
+    range.lMax = 127;
+    res = this->dev->SetProperty(DIPROP_RANGE, &range.diph);
+    if (res) {
+        this->joy_configured = false;
+    } else {
+        this->joy_configured = true;
+    }
+
+    DIPROPDWORD deadzone;
+    deadzone.diph.dwSize = sizeof(deadzone);
+    deadzone.diph.dwHeaderSize = sizeof(deadzone.diph);
+    deadzone.diph.dwHow = 1;
+    deadzone.dwData = 1000;
+    deadzone.diph.dwObj = 0;
+    res = this->dev->SetProperty(DIPROP_DEADZONE, &deadzone.diph);
+    if (res)
+        return 1;
+    deadzone.diph.dwObj = 4;
+    res = this->dev->SetProperty(DIPROP_DEADZONE, &deadzone.diph);
+    if (res)
+        return 1;
+    deadzone.diph.dwObj = 8;
+    res = this->dev->SetProperty(DIPROP_DEADZONE, &deadzone.diph);
+    if (res) {
+        this->joy_configured = false;
+    }
+    this->multi_pov = 0;
+    DIDEVCAPS caps;
+    res = this->dev->GetCapabilities(&caps);
+    if (!res) {
+        if (caps.dwPOVs > 0) {
+            this->multi_pov = true;
+        }
+    }
+
+    return 0;
+}
+
+// FUNCTION: REDLINE 0x00495E26
+int GamepadDevice::Init(const char* name, HWND window) {
+    int res = JoystickDevice::Init(name, window);
+    if (res)
+        return res;
+    this->unk0 = 0;
+    this->unk1 = 0;
+    this->unk2 = 6;
+    this->unk3 = 24;
+    this->unk4 = 0;
+    return 0;
+}
+
+// FUNCTION: REDLINE 0x00495488
+int KeyboardDevice::Init(const char* name, HWND window) {
+    InputDevice::Init(name, window);
+    int res = this->dev->SetCooperativeLevel(window, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
+    if (res)
+        return 1;
+    res = this->dev->SetDataFormat(&c_dfDIKeyboard);
+    if (res)
+        return 1;
+    return 0;
+}
+
+// FUNCTION: REDLINE 0x004999C7
+BOOL CALLBACK EnumDinputDevicesCb(LPCDIDEVICEINSTANCE devinst, void* userdata) {
+    Keybinds* keybinds = (Keybinds*)userdata;
+    InputDevice* input = NULL;
+    int unk = 0;
+
+    int dev_type = LOBYTE(devinst->dwDevType);
+    switch (dev_type) {
+        case DIDEVTYPE_MOUSE:
+            input = new MouseDevice();
+            break;
+
+        case DIDEVTYPE_JOYSTICK:
+            LPDIRECTINPUTA dinput;
+            int res = DirectInputCreateA(g_hInstance, DIRECTINPUT_VERSION, &dinput, 0);
+            if (res) {
+                input = new JoystickDevice();
+                break;
+            }
+            LPDIRECTINPUTDEVICEA dev = NULL;
+            res = dinput->CreateDevice(devinst->guidInstance, &dev, NULL);
+            if (res) {
+                input = new JoystickDevice();
+                break;
+            }
+            DIDEVCAPS caps;
+            res = dev->GetCapabilities(&caps);
+            if (res)
+                caps.dwFlags = 0;
+            if (HIBYTE(LOWORD(devinst->dwDevType)) == DIDEVTYPEJOYSTICK_GAMEPAD) {
+                input = new GamepadDevice();
+            } else {
+                input = new JoystickDevice();
+            }
+            dev->Release();
+            dinput->Release();
+            break;
+    }
+
+    if (input) {
+        keybinds->AddInputDevice(input, devinst->guidInstance, devinst->tszProductName, unk);
+    }
+
+    return 1;
+}
+
+// FUNCTION: REDLINE 0x00496F74
+void Keybinds::AddInputDevice(InputDevice* dev, GUID guid, const char* dev_name, int unk) {
+    if (this->input_device_count >= this->input_devices_max) {
+        if (dev)
+            delete dev;
+        return;
+    }
+    LPDIRECTINPUTDEVICEA idev;
+    int res = this->dinput->CreateDevice(guid, &idev, NULL);
+    if (res) {
+        if (dev)
+            delete dev;
+        return;
+    }
+    res = idev->QueryInterface(IID_IDirectInputDevice2A, (LPVOID*) &dev->dev);
+    idev->Release();
+
+    if (res) {
+        if (dev)
+            delete dev;
+        return;
+    }
+
+    if (dev->Init(dev_name, g_Window)) {
+        if (dev)
+            delete dev;
+        return;
+    }
+    
+    this->input_devices[this->input_device_count++] = dev;
+    if (unk) {
+        this->unk = unk;
+    }
+}
+
+// FUNCTION: REDLINE 0x00496E82
+int Keybinds::DeinitDirectInput() {
+    if (this->input_devices) {
+        for (int i = 0; i < this->input_device_count; ++i) {
+            if (this->input_devices[i]) {
+                delete this->input_devices[i];
+                this->input_devices[i] = NULL;
+            }
+        }
+        delete this->input_devices;
+        this->input_devices = NULL;
+    }
+    if (this->dinput) {
+        this->dinput->Release();
+        this->dinput = NULL;
+    }
+    return 0;
+}
+
+// FUNCTION: REDLINE 0x00496B74
+int Keybinds::InitDirectInput() {
+    if (DirectInputCreateA(g_hInstance, DIRECTINPUT_VERSION, &this->dinput, NULL))
+        return 1;
+    this->input_devices = new InputDevice*[this->input_devices_max];
+    if(this->dinput->EnumDevices(0, EnumDinputDevicesCb, this, DIEDFL_ATTACHEDONLY)) {
+        this->DeinitDirectInput();
+        return 1;
+    }
+
+    InputDevice* keyboard = new KeyboardDevice();
+    this->AddInputDevice(keyboard, GUID_SysKeyboard, "Sys Keyboard", 0);
+
+    this->mouse_sens_foot = g_Mouse_Foot;
+    this->joy_sens_horiz = g_Joystick_LeftRight;
+    this->joy_sens_vert = g_Joystick_UpDown;
+
+    if (g_Joystick_DeadZoneX < 0)
+        g_Joystick_DeadZoneX = -g_Joystick_DeadZoneX;
+    if (g_Joystick_DeadZoneX > 127)
+        g_Joystick_DeadZoneX = 127;
+    if (g_Joystick_DeadZoneY < 0)
+        g_Joystick_DeadZoneY = -g_Joystick_DeadZoneY;
+    if (g_Joystick_DeadZoneY > 127)
+        g_Joystick_DeadZoneY = 127;
+
+    // TODO: Bunch of memsetting into unk segments.
+    // Good for reference on member size
+    return 0;
+}
+
+// FUNCTION: REDLINE 0x0043C70C
+bool InitDirectInput() {
+    if (!g_Keybinds)
+        return 0;
+    if (g_Keybinds->InitDirectInput())
+        return 0;
+    return 1;
+}
+
+// FUNCTION: REDLINE 0x00495319
+bool InputDevice::Unacquire() {
+    int res = this->dev->Unacquire();
+    this->acquired = false;
+    return this->acquired;
+}
+
+// FUNCTION: REDLINE 0x00497102
+void Keybinds::UnacquireInput() {
+    for (int i = 0; i < this->input_device_count; ++i) {
+        this->input_devices[i]->Unacquire();
+    }
+}
+
+// FUNCTION: REDLINE 0x0043C7B2
+void UnacquireInput() {
+    g_Keybinds->UnacquireInput();
 }

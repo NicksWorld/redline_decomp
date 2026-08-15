@@ -1,5 +1,7 @@
 #pragma once
 
+#include <windows.h>
+
 struct ImageRef {
     short idx;
     short refcount;
@@ -36,7 +38,10 @@ struct Font {
     Glyph glyphs[128];
 };
 
+class Widget;
 class GraphicWidget;
+
+#undef LoadImage
 
 class CInterface {
     public:
@@ -50,8 +55,9 @@ class CInterface {
     short font_count;
     ImageRef images[375];
     unsigned short image_count;
-    int arr[600];
-    char pad2[96];
+    Widget* controls[600];
+    short control_count;
+    char pad2[94];
     short unk2;
     short unk3;
     char pad3[628];
@@ -61,13 +67,20 @@ class CInterface {
     int InitGraphics();
     int LoadFont(const char* name);
     short LoadImage(const char* name, short unk);
+    short GetImageHandle(short img);
 
     void ReleaseImage(short slot);
+
+    short AddControl(Widget* widget);
+    void RemoveControl(Widget* widget);
+
+    void Render(short unk);
 };
 
 class Widget {
     public:
     // TODO: 10 virtual methods
+    virtual short LoadResources(int unk) = 0; // TODO vtable[1]
     virtual void SetDescription(const char* desc); // vtable[5];
     Widget();
     float unk_0;
@@ -101,10 +114,11 @@ class Widget {
 };
 
 struct GraphicImageSlot {
-    int unk;
-    int unk2;
-    int width;
-    int height;
+    RECT rect;
+    // int unk;
+    // int unk2;
+    // int width;
+    // int height;
     short img;
     short unk6;
     short unk7;
@@ -121,7 +135,15 @@ class GraphicWidget : public Widget {
     short slot_capacity;
     short slot_count;
 
+    short LoadResources(int unk); // vtable[1]
+
     bool SetImage(const char* name, short unk, short unk2, short width, short height, unsigned short unk3, short unk4, short unk5);
     void AllocImageSlots(short count);
     void UnloadImages();
 };
+
+enum WidgetType {
+    WIDGET_GRAPHIC = 2,
+};
+
+Widget* CreateWidget(int type, CInterface* gui);

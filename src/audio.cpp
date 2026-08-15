@@ -89,9 +89,18 @@ int AudioQualityToFormat(int quality, WAVEFORMATEX *fmt) {
 
 // FUNCTION: REDLINE 0x0053454D
 int AudioManager::Init(unsigned short channels) {
+    struct Locals {
+        int res;
+        DSBUFFERDESC desc;
+        int j;
+        unsigned short i;
+        ListenerInfo listener;
+        char unk[24];
+    } l;
     if (channels > 32)
         channels = 32;
     this->init_res = DirectSoundCreate(NULL, &this->dsound, NULL) == 0;
+    this->pad3[10000] = 1; // TODO
     if (this->init_res && this->dsound) {
         if (this->dsound->SetCooperativeLevel(g_Window, 3)) {
             g_Log.Debug("DirectSound: failed to set exclusive mode");
@@ -101,49 +110,46 @@ int AudioManager::Init(unsigned short channels) {
         if (this->channel_count) {
             this->channel_data = new ChannelData[this->channel_count];
         }
-        // TODO this->??? = 32;
-        short i;
-        for (i = 0; i < this->channel_count; ++i) {
-            this->channel_data[i].unk0 = 0;
-            this->channel_data[i].unk1 = -1;
+        *(short*)this->pad3 = 32; // TODO
+        for (l.i = 0; l.i < this->channel_count; ++l.i) {
+            this->channel_data[l.i].unk0 = 0;
+            this->channel_data[l.i].unk1 = -1;
         }
-        for (i = 0; i < 32; ++i) {
-            this->sound_buffers[i].unk = 0;
-            this->InitSoundBuffer(&this->sound_buffers[i], i < 16);
+        for (l.i = 0; l.i < 32; ++l.i) {
+            this->sound_buffers[l.i].unk = 0;
+            this->InitSoundBuffer(&this->sound_buffers[l.i], l.i < 16);
         }
         this->listener = NULL;
-        ListenerInfo listener;
-        listener.x = listener.y = listener.z = 999999.0;
-        memset(&listener.xFront, 0, 12);
-        memset(&listener.velX, 0, 12);
-        this->UpdateListener(&listener);
+        l.listener.x = l.listener.y = l.listener.z = 999999.0;
+        l.listener.xFront = l.listener.yFront = l.listener.zFront = 0;
+        l.listener.velX = l.listener.velY = l.listener.velZ = 0;
+        this->UpdateListener(&l.listener);
 
-        DSBUFFERDESC desc;
-        memset(&desc, 0, sizeof(desc));
+        memset(&l.desc, 0, sizeof(l.desc));
         memset(&this->buf_fmt, 0, sizeof(this->buf_fmt));
         this->buf_fmt.wFormatTag = WAVE_FORMAT_PCM;
         this->quality = g_AudioFormats[0];
         AudioQualityToFormat(this->quality, &this->buf_fmt);
-
-        desc.dwSize = sizeof(desc);
-        desc.dwFlags = DSBCAPS_PRIMARYBUFFER | DSBCAPS_CTRL3D | DSBCAPS_CTRLVOLUME;
-        int res = this->dsound->CreateSoundBuffer(&desc, &this->primary_snd_buf, NULL);
-        if (res) {
-            g_Log.DsErr("Creating Sound Buffer", res);
+        l.desc.dwSize = sizeof(l.desc);
+        l.desc.dwFlags = DSBCAPS_PRIMARYBUFFER | DSBCAPS_CTRL3D | DSBCAPS_CTRLVOLUME;
+        l.res = this->dsound->CreateSoundBuffer(&l.desc, &this->primary_snd_buf, NULL);
+        if (l.res) {
+            g_Log.DsErr("Creating Sound Buffer", l.res);
             this->primary_snd_buf = NULL;
             this->initialized = 1;
             return 1;
         }
 
         if (this->primary_snd_buf->SetFormat((LPWAVEFORMATEX)&this->buf_fmt)) {
-            int j;
-            for (j = 1; j < 16; ++j) {
-                this->quality = g_AudioFormats[j];
+            l.j = 1;
+            while (l.j < 16) {
+                this->quality = g_AudioFormats[l.j];
                 AudioQualityToFormat(this->quality, &this->buf_fmt);
                 if (!this->primary_snd_buf->SetFormat(&this->buf_fmt))
                     break;
+                l.j++;
             }
-            if (j >= 16) {
+            if (l.j >= 16) {
                 this->primary_snd_buf->Release();
                 this->primary_snd_buf = NULL;
                 this->initialized = 1;
@@ -170,7 +176,7 @@ int AudioManager::Init(unsigned short channels) {
         this->SetMasterVolume(g_Master_Volume);
         this->listener->SetRolloffFactor(0.05, 0);
         this->listener->SetDistanceFactor(0.1, 0);
-        // TODO
+        // TODO: Unk subroutine
 
         this->initialized = 1;
         return 1;
@@ -232,39 +238,71 @@ void AudioManager::InitSoundBuffer(SoundBuffer* buf, int first_half) {
     buf->unk0 = 0;
 }
 
+// GLOBAL: REDLINE 0x005873CC
+const float g_VolumeScalar = 10000.0;
+// GLOBAL: REDLINE 0x00585918
+const float g_VolumeDivisor = 100.0;
+
 // FUNCTION: REDLINE 0x00534A07
 void AudioManager::SetMasterVolume(float volume) {
-    this->primary_snd_buf->SetVolume((10000.0 * volume / 100.0) - 10000);
+    struct Locals {
+        long vol;
+        int res;
+        int tmp;
+    } l;
+    l.vol = (long)(g_VolumeScalar * volume / g_VolumeDivisor) - 10000;
+    l.res = this->primary_snd_buf->SetVolume(l.vol);
+    // TODO: This isn't quite right, but it has no affect
+    if (l.res != 0) {
+        switch (l.res) {
+            case DSERR_CONTROLUNAVAIL:
+                l.tmp = l.res;
+                l.res = l.tmp;
+                break;
+            case DSERR_GENERIC:
+                l.tmp = l.res;
+                l.res = l.tmp;
+                break;
+            case DSERR_INVALIDPARAM:
+                l.tmp = l.res;
+                l.res = l.tmp;
+                break;
+            case DSERR_PRIOLEVELNEEDED:
+                l.tmp = l.res;
+                l.res = l.tmp;
+                break;
+        }
+    }
 }
 
 // FUNCTION: REDLINE 0x0053549C
 void AudioManager::UpdateListener(ListenerInfo* info) {
-    if (!this->init_res)
-        return;
-    this->listener_data = *info;
-    if (this->listener) {
-        this->listener->SetPosition(this->listener_data.x, this->listener_data.y, this->listener_data.z, 1);
-        this->listener->SetOrientation(
-                this->listener_data.xFront,
-                this->listener_data.yFront,
-                this->listener_data.zFront,
-                this->listener_data.xTop,
-                this->listener_data.yTop,
-                this->listener_data.zTop,
-                1);
-        this->listener->SetVelocity(this->listener_data.velX, this->listener_data.velY, this->listener_data.velZ, 1);
-    }
-
-    short i;
-    for (i = 0; i < this->channel_count_other; ++i) {
-        if (this->channel_data[i].unk0 == 1) {
-            // TODO: Update distance from audio source
+    if (this->init_res) {
+        this->listener_data = *info;
+        if (this->listener) {
+            this->listener->SetPosition(this->listener_data.x, this->listener_data.y, this->listener_data.z, 1);
+            this->listener->SetOrientation(
+                    this->listener_data.xFront,
+                    this->listener_data.yFront,
+                    this->listener_data.zFront,
+                    this->listener_data.xTop,
+                    this->listener_data.yTop,
+                    this->listener_data.zTop,
+                    1);
+            this->listener->SetVelocity(this->listener_data.velX, this->listener_data.velY, this->listener_data.velZ, 1);
         }
+
+        short i;
+        for (i = 0; i < this->channel_count_other; ++i) {
+            if (this->channel_data[i].unk0 == 1) {
+                // TODO: Update distance from audio source
+            }
+        }
+        for (i = 0; i < 32; ++i) {
+            // if (this->sound_buffers[i].unk == 1 && ???)
+                // TODO: Update distance from audio source
+        }
+        if (this->listener)
+            this->listener->CommitDeferredSettings();
     }
-    for (i = 0; i < 32; ++i) {
-        // if (this->sound_buffers[i].unk == 1 && ???)
-            // TODO: Update distance from audio source
-    }
-    if (this->listener)
-        this->listener->CommitDeferredSettings();
 }

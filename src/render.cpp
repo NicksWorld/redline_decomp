@@ -2619,3 +2619,34 @@ err:
 
     return 0;
 }
+
+// FUNCTION: REDLINE 0x00457CA5
+bool D3dRenderer::BlitSurface(LPDIRECTDRAWSURFACE4 surf, LPRECT dst_rect, LPRECT src_rect, unsigned short bitflags) {
+    int flags = DDBLT_WAIT;
+    if (bitflags & 2)
+        flags |= DDBLT_KEYSRC;
+
+    float width_norm = this->width_norm;
+    float height_norm = this->height_norm;
+
+    RECT dst = *dst_rect;
+    if (width_norm < 1.0 || height_norm < 1.0) {
+        dst.left *= width_norm;
+        dst.right *= width_norm;
+        dst.top *= height_norm;
+        dst.bottom *= height_norm;
+    } else if (width_norm > 1.0 && height_norm > 1.0) {
+        float v6 = 320.0 * width_norm - 320.0;
+        float v7 = 240.0 * height_norm - 240.0;
+        dst.left += v6;
+        dst.right += v6;
+        dst.top += v7;
+        dst.bottom += v7;
+    }
+    int res = this->render_surf->Blt(&dst, surf, src_rect, flags, NULL);
+    if (res) {
+        g_Log.DxErr("Blit Surface", res);
+        return 0;
+    }
+    return 1;
+}
