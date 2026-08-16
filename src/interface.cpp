@@ -350,7 +350,7 @@ GraphicWidget::GraphicWidget(CInterface* ui) {
 }
 
 // FUNCTION: REDLINE 0x004A59EE
-void LoadInterfaceImage(short unk, short unk2, RECT* rect, short img_idx, CInterface* ui) {
+void DrawInterfaceImage(short x_off, short y_off, RECT* rect, short img_idx, CInterface* ui) {
     CInterface* gui;
     if (!ui) {
         gui = g_Interface;
@@ -359,28 +359,27 @@ void LoadInterfaceImage(short unk, short unk2, RECT* rect, short img_idx, CInter
     }
 
     short handle = gui->GetImageHandle(img_idx);
-    BitmapHolderLoad(handle, unk, unk2, rect);
+    BitmapHolderDraw(handle, x_off, y_off, rect);
 }
 
 // FUNCTION: REDLINE 0x004A1B73
-short GraphicWidget::LoadResources(int unk) {
+short GraphicWidget::Render(int unk) {
     if (!unk && !this->unk_92 && !this->unk_90)
         return 0;
     if (this->unk_114 < 0 || this->slots[this->unk_114].img == -1)
         return 0;
 
-    LoadInterfaceImage(
-            this->slots[this->unk_114].unk6 + this->unk_0,
-            this->slots[this->unk_114].unk7 + this->unk_4,
+    DrawInterfaceImage(
+            this->slots[this->unk_114].unk6 + this->unk_0, // x_off (atlas?)
+            this->slots[this->unk_114].unk7 + this->unk_4, // y_off (atlas?)
             &this->slots[this->unk_114].rect,
             this->slots[this->unk_114].img,
             this->ui);
     this->unk_12 = this->slots[this->unk_114].unk6 + this->unk_0;
     this->unk_14 = this->slots[this->unk_114].unk7 + this->unk_4;
 
-    // TODO LOWORD of width and height... are they shorts?
     this->width = LOWORD(this->slots[this->unk_114].rect.right) + this->unk_12;
-    this->width = LOWORD(this->slots[this->unk_114].rect.bottom) + this->unk_14;
+    this->height = LOWORD(this->slots[this->unk_114].rect.bottom) + this->unk_14;
     return this->unk_90;
 }
 
@@ -415,7 +414,7 @@ void GraphicWidget::AllocImageSlots(short count) {
 }
 
 // FUNCTION: REDLINE 0x004A18B9
-bool GraphicWidget::SetImage(const char* name, short unk, short unk2, short width, short height, unsigned short flags, short unk4, short unk5) {
+bool GraphicWidget::SetImage(const char* name, short x, short y, short width, short height, unsigned short flags, short unk4, short unk5) {
     this->UnloadImages();
     if (this->slot_capacity <= 0) {
         this->AllocImageSlots(4);
@@ -425,8 +424,8 @@ bool GraphicWidget::SetImage(const char* name, short unk, short unk2, short widt
     if (img < 0)
         return 0;
 
-    this->slots[this->slot_count].rect.left = unk;
-    this->slots[this->slot_count].rect.top = unk2;
+    this->slots[this->slot_count].rect.left = x;
+    this->slots[this->slot_count].rect.top = y;
     this->slots[this->slot_count].rect.right = width;
     this->slots[this->slot_count].rect.bottom = height;
     this->slots[this->slot_count].unk6 = unk4;
@@ -435,8 +434,8 @@ bool GraphicWidget::SetImage(const char* name, short unk, short unk2, short widt
     
     this->slot_count++;
 
-    this->unk_12 = unk;
-    this->unk_14 = unk2;
+    this->unk_12 = x;
+    this->unk_14 = y;
     this->width = width;
     this->height = height;
     return true;
@@ -458,7 +457,12 @@ void GraphicWidget::UnloadImages() {
 // FUNCTION: REDLINE 0x004A4CC9
 void CInterface::Render(short unk) {
     if (this->unk0) {
-        this->bg_graphic->LoadResources(1);
+        this->bg_graphic->Render(1);
+    }
+
+    // TODO: This isn't actually correct
+    for (int i = 0; i < this->control_count; ++i) {
+        this->controls[i]->Render(1);
     }
     // TODO
 }

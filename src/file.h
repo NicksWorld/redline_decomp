@@ -36,8 +36,8 @@ class ImageFileContainer : FileContainer {
     short alpha;
     short mips;
     char pad3[2];
-    char* image_data;
-    char* image_cmap;
+    unsigned char* image_data;
+    unsigned char* image_cmap;
 
     ImageFileContainer();
     ~ImageFileContainer();
@@ -46,7 +46,7 @@ class ImageFileContainer : FileContainer {
     int LoadBTF(const char* path);
     void FlipVertical();
 
-    char* GetMip(short level);
+    unsigned char* GetMip(short level);
 
     void ClearImageData();
 };

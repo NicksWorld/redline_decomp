@@ -10,6 +10,7 @@
 #include "state/debug.h"
 #include "state/av.h"
 #include "state/shutdown.h"
+#include "state/intro.h"
 
 #define STATE_STUB(STATE_STUB_NAME)                                            \
     bool STATE_STUB_NAME(int state) {                                          \
@@ -104,10 +105,10 @@ bool EngineState::SetupStates() {
     this->states[STATE_INIT_AV]->shutdown = StateImpl::AV::Shutdown;
     this->states[STATE_INIT_AV]->flag = false;
 
-    this->states[STATE_INTRO]->event_tick = EventTickStub;
-    this->states[STATE_INTRO]->tick = TickStub;
-    this->states[STATE_INTRO]->init = InitStub;
-    this->states[STATE_INTRO]->shutdown = ShutdownStub;
+    this->states[STATE_INTRO]->event_tick = StateImpl::Intro::EventTick;
+    this->states[STATE_INTRO]->tick = StateImpl::Intro::Tick;
+    this->states[STATE_INTRO]->init = StateImpl::Intro::Init;
+    this->states[STATE_INTRO]->shutdown = StateImpl::Intro::Shutdown;
     this->states[STATE_INTRO]->flag = true;
 
     this->states[STATE_START_MENU]->event_tick = EventTickStub;

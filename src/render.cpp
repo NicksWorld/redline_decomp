@@ -2344,7 +2344,6 @@ int D3dRenderer::LoadImage(const char* path, BitmapSlot* slot) {
     return 1;
 }
 
-
 // FUNCTION: REDLINE 0x00458365
 int D3dRenderer::PopulateTexture(LPDIRECTDRAWSURFACE4 surf, ImageFileContainer *img, DDSURFACEDESC2 *desc, LPDIRECTDRAWPALETTE palette, short bpp, short alpha, short mip) {
     int res;
@@ -2353,12 +2352,12 @@ int D3dRenderer::PopulateTexture(LPDIRECTDRAWSURFACE4 surf, ImageFileContainer *
     int paletted = 0;
     int palette_caps = 0;
     int cmap_len = img->cmap_len;
-    char* cmap = img->image_cmap;
+    unsigned char* cmap = img->image_cmap;
     int width = img->width;
     int height = img->height;
 
     void* surf_mem;
-    char* color_data;
+    unsigned char* color_data;
 
     float red_mult, green_mult, blue_mult, alpha_mult;
     int red_shift, green_shift, blue_shift, alpha_shift;
@@ -2395,8 +2394,8 @@ int D3dRenderer::PopulateTexture(LPDIRECTDRAWSURFACE4 surf, ImageFileContainer *
         tagPALETTEENTRY img_palette[256];
         for (int i = 0; i < palette_size; ++i) {
             img_palette[i].peRed = cmap[4 * i + 2];
-            img_palette[i].peGreen = cmap[4 * i + 2];
-            img_palette[i].peBlue = cmap[4 * i + 2];
+            img_palette[i].peGreen = cmap[4 * i + 1];
+            img_palette[i].peBlue = cmap[4 * i];
             img_palette[i].peFlags = 68;
         }
         if (!palette) {
@@ -2433,6 +2432,7 @@ int D3dRenderer::PopulateTexture(LPDIRECTDRAWSURFACE4 surf, ImageFileContainer *
     } else {
         color_data = img->GetMip(mip);
     }
+
 
     if (bpp != 8) {
         int channel_bits = 0;
@@ -2555,20 +2555,20 @@ int D3dRenderer::PopulateTexture(LPDIRECTDRAWSURFACE4 surf, ImageFileContainer *
                     if (alpha) {
                         for (y = 0; y < height; ++y) {
                             for (x = 0; x < width; ++x) {
-                                short cmap_idx = *color_data++;
+                                short cmap_idx = *(color_data++);
                                 *surf++ = (255 << alpha_shift)
-                                    | ((int)(cmap[4 * cmap_idx] * blue_mult) << blue_shift)
-                                    | ((int)(cmap[4 * cmap_idx + 1] * green_mult) << green_shift)
-                                    | ((int)(cmap[4 * cmap_idx + 2] * red_mult) << red_shift);
+                                    | ((int)((float)cmap[4 * cmap_idx] * blue_mult) << blue_shift)
+                                    | ((int)((float)cmap[4 * cmap_idx + 1] * green_mult) << green_shift)
+                                    | ((int)((float)cmap[4 * cmap_idx + 2] * red_mult) << red_shift);
                             }
                         }
                     } else {
                         for (y = 0; y < height; ++y) {
                             for (x = 0; x < width; ++x) {
-                                short cmap_idx = *color_data++;
-                                *surf++ = ((int)(cmap[4 * cmap_idx] * blue_mult) << blue_shift)
-                                    | ((int)(cmap[4 * cmap_idx + 1] * green_mult) << green_shift)
-                                    | ((int)(cmap[4 * cmap_idx + 2] * red_mult) << red_shift);
+                                short cmap_idx = *(color_data++);
+                                *surf++ = ((unsigned int)((float)cmap[4 * cmap_idx] * blue_mult) << blue_shift)
+                                    | ((unsigned int)((float)cmap[4 * cmap_idx + 1] * green_mult) << green_shift)
+                                    | ((unsigned int)((float)cmap[4 * cmap_idx + 2] * red_mult) << red_shift);
                             }
                         }
                     }

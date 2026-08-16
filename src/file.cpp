@@ -293,7 +293,7 @@ int ImageFileContainer::LoadTGA(const char* path) {
     switch(header[16]) {
         case 32:
             this->ClearImageData();
-            this->image_data = new char[4 * this->height * this->width];
+            this->image_data = new unsigned char[4 * this->height * this->width];
             if (!this->image_data)
                 return 0;
             this->ReadBytes(this->image_data, 4 * this->height * this->width);
@@ -303,7 +303,7 @@ int ImageFileContainer::LoadTGA(const char* path) {
             return 1;
         case 24:
             this->ClearImageData();
-            this->image_data = new char[3 * this->height * this->width];
+            this->image_data = new unsigned char[3 * this->height * this->width];
             if (!this->image_data)
                 return 0;
             this->ReadBytes(this->image_data, 4 * this->height * this->width);
@@ -317,16 +317,16 @@ int ImageFileContainer::LoadTGA(const char* path) {
             this->cmap_len = (header[5] << 8) + header[6];
             this->alpha = 0;
             if (this->cmap_len > 0) {
-                this->image_cmap = new char[4 * this->cmap_len];
-                char* cmap = this->image_cmap;
+                this->image_cmap = new unsigned char[4 * this->cmap_len];
+                unsigned char* cmap = this->image_cmap;
                 for (int i = 0; i < this->cmap_len; ++i) {
                     int* color = (int*)cmap;
                     cmap += 4;
                     this->ReadBytes(color, 3);
                 }
             } else {
-                this->image_cmap = new char[4 * 256];
-                char *color = this->image_cmap;
+                this->image_cmap = new unsigned char[4 * 256];
+                unsigned char *color = this->image_cmap;
                 // FIXME: This doesn't do anything... as we just confirmed
                 // cmap_len <= 0
                 for (int j = 0; j < this->cmap_len; ++j) {
@@ -336,7 +336,7 @@ int ImageFileContainer::LoadTGA(const char* path) {
                     color += 4;
                 }
             }
-            this->image_data = new char[this->height * this->width];
+            this->image_data = new unsigned char[this->height * this->width];
             this->ReadBytes(this->image_data, this->height * this->width);
             return 1;
     }
@@ -367,7 +367,7 @@ int ImageFileContainer::LoadBTF(const char* path) {
         image_bytes += mipsize;
     }
     image_bytes *= this->bpp / 8;
-    this->image_data = new char[image_bytes];
+    this->image_data = new unsigned char[image_bytes];
     switch (this->bpp) {
         case 32:
             this->ReadBytes(this->image_data, image_bytes);
@@ -386,10 +386,10 @@ int ImageFileContainer::LoadBTF(const char* path) {
         case 8:
             this->max_palette_size = 256;
             this->alpha = 0;
-            this->image_cmap = new char[4 * this->cmap_len];
-            char* color_iter = this->image_cmap;
+            this->image_cmap = new unsigned char[4 * this->cmap_len];
+            unsigned char* color_iter = this->image_cmap;
             for (int j = 0; j < this->cmap_len; ++j) {
-                char* color = color_iter;
+                unsigned char* color = color_iter;
                 color_iter += 4;
                 this->ReadBytes(color, 3);
             }
@@ -424,7 +424,7 @@ void ImageFileContainer::FlipVertical() {
 }
 
 // FUNCTION: REDLINE 0x004931E8
-char* ImageFileContainer::GetMip(short level) {
+unsigned char* ImageFileContainer::GetMip(short level) {
     if (this->mips < level)
         return 0;
     int off = 0;

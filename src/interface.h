@@ -80,7 +80,7 @@ class CInterface {
 class Widget {
     public:
     // TODO: 10 virtual methods
-    virtual short LoadResources(int unk) = 0; // TODO vtable[1]
+    virtual short Render(int unk) = 0; // TODO vtable[1]
     virtual void SetDescription(const char* desc); // vtable[5];
     Widget();
     float unk_0;
@@ -135,7 +135,7 @@ class GraphicWidget : public Widget {
     short slot_capacity;
     short slot_count;
 
-    short LoadResources(int unk); // vtable[1]
+    short Render(int unk); // vtable[1]
 
     bool SetImage(const char* name, short unk, short unk2, short width, short height, unsigned short unk3, short unk4, short unk5);
     void AllocImageSlots(short count);
