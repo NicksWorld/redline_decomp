@@ -22,7 +22,7 @@ TextureMgr::TextureMgr() {
     this->unk_count = 0;
     this->unk3 = 1;
     this->slot_count = 10;
-    this->unk = 0;
+    this->cur_tex = 0;
     this->use_dxtexmgr = 0;
     this->use_mip = 0;
     this->detail_flags = 0;
@@ -283,7 +283,7 @@ void TextureMgr::Unknown() {
         this->slots[j].unk4 = this->slots[j].count - 1;
         this->slots[j].unk22 = 0;
     }
-    this->unk = 0;
+    this->cur_tex = 0;
     this->unk3 = 1;
 }
 
@@ -502,9 +502,9 @@ void TextureMgr::LoadTextures() {
             continue;
 
         short detail_flags = this->detail_flags;
-        if (this->unk_struct[i].unk0) {
+        if (this->unk_struct[i].tex) {
             // TODO: Something->Release()?
-            this->unk_struct[i].unk0 = NULL;
+            this->unk_struct[i].tex = NULL;
         }
         // TODO: No textures get loaded at this point in the decomp, so delaying impl
     }
@@ -724,4 +724,42 @@ void BitmapHolder::DrawSlot(short handle, short x_off, short y_off, RECT* rect) 
             g_Log.Debug(buf);
         }
     }
+}
+
+// FUNCTION: REDLINE 0x005444AE
+void TextureMgr::SetTexture(short unk) {
+    if (this->use_dxtexmgr) {
+        LPDIRECT3DTEXTURE2 v;
+        if (unk <= 0)
+            v = 0;
+        else
+            v = this->unk_struct[unk].tex;
+
+        if (this->cur_tex != v) {
+            this->cur_tex = v;
+            int res = g_Direct3d->D3dDevice()->SetTexture(0, v);
+            if (res)
+                g_Log.D3dErr("setting texture handle", res);
+            this->SetMip(g_BitmapHolder->slots[this->unk_struct[unk].unk2].unk3);
+        }
+    } else if (unk > 0 && this->unk_struct[unk].unk >= 0) {
+        LPDIRECT3DTEXTURE2 tex = this->slots[this->unk_struct[unk].unk3].texture_int[this->unk_struct[unk].unk];
+        if (this->cur_tex != tex) {
+            this->cur_tex = tex;
+            int res = g_Direct3d->D3dDevice()->SetTexture(0, tex);
+            if (res)
+                g_Log.D3dErr("setting texture handle", res);
+            this->SetMip(g_BitmapHolder->slots[this->unk_struct[unk].unk2].unk3);
+        }
+    } else {
+        if (this->cur_tex) {
+            this->cur_tex = NULL;
+            g_Direct3d->D3dDevice()->SetTexture(0, NULL);
+        }
+    }
+}
+
+// FUNCTION: REDLINE 0x0048F1ED
+void SetTexture(short tex) {
+    g_TextureMgr->SetTexture(tex);
 }

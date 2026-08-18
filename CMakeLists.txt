@@ -25,6 +25,7 @@ add_executable(redline WIN32
     src/interface.cpp
     src/cdaudio.cpp
     src/audio.cpp
+    src/render_helper.cpp
     thirdparty/3dnow/amddcpu.cpp
 
     # Game state methods

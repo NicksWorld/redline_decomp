@@ -17,6 +17,8 @@ extern class CInterface* g_Interface;
 extern class CdAudio* g_CdAudio;
 extern class AudioManager* g_Audio;
 
+extern class RenderHelper* g_RenderHelper;
+
 // GameData script (rough, sizing wrong)
 struct GameData {
     char pad[18];

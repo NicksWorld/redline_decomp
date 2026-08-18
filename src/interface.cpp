@@ -460,9 +460,24 @@ void CInterface::Render(short unk) {
         this->bg_graphic->Render(1);
     }
 
-    // TODO: This isn't actually correct
-    for (int i = 0; i < this->control_count; ++i) {
-        this->controls[i]->Render(1);
+    short control_count = this->control_count;
+    for (unsigned short i = 0; i < 2; ++i) {
+        for (short j = 0; j < 600; ++j) {
+            if (this->controls[j]) {
+                if (this->controls[j]->unk_122 == i) {
+                    if (this->controls[j]->Render(0)) {
+                        if (this->controls[j]) {
+                            delete this->controls[j]; // TODO: Why is this non-virtual?
+                            this->controls[j] = NULL;
+                        }
+                        --this->control_count;
+                    }
+                    if (!--control_count)
+                        break;
+                }
+            }
+        }
     }
+
     // TODO
 }

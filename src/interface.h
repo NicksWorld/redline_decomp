@@ -86,6 +86,8 @@ class Widget {
     float unk_0;
     float unk_4;
     float unk_8;
+
+    // Possibly left/top/right/bottom
     short unk_12;
     short unk_14;
     short width;
@@ -106,7 +108,7 @@ class Widget {
     short unk_114;
     int unk_116;
     char unk_120;
-    short unk_122;
+    unsigned short unk_122;
     int unk_124;
     int unk_128;
 
@@ -115,10 +117,6 @@ class Widget {
 
 struct GraphicImageSlot {
     RECT rect;
-    // int unk;
-    // int unk2;
-    // int width;
-    // int height;
     short img;
     short unk6;
     short unk7;

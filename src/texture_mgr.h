@@ -36,17 +36,18 @@ struct TextureSlot {
 };
 
 struct UnkStruct {
-    int unk0;
+    LPDIRECT3DTEXTURE2 tex;
     short unk;
     short unk2;
-    char pad2[10];
+    short unk3;
+    char pad2[6];
 };
 
 class TextureMgr {
     public:
     UnkStruct* unk_struct;
     TextureSlot slots[10];
-    int unk;
+    LPDIRECT3DTEXTURE2 cur_tex;
     int unk1;
     short pad2;
     short unk_count;
@@ -77,6 +78,8 @@ class TextureMgr {
     void SetMip(short use_mip);
 
     void LoadTextures();
+
+    void SetTexture(short unk);
 };
 
 struct BitmapSlot {
@@ -125,3 +128,5 @@ void BitmapHolderDraw(short handle, short unk, short unk2, RECT* rect);
 
 short RedlineLoadImage(const char* path, short unk);
 void RedlineUnloadImage(short slot);
+
+void SetTexture(short tex);

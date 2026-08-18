@@ -17,6 +17,7 @@
 #include "../cdaudio.h"
 #include "../audio.h"
 #include "../keybinds.h"
+#include "../render_helper.h"
 
 #include <stdio.h>
 
@@ -415,7 +416,8 @@ int UnkSomething() {
         // TODO: Unk 0x005A8018
         // TODO: Unk (vector?) 0x005C3F68
         // TODO: Unk 0x005C3F64
-        // TODO: Unk 0x005C7538
+        // Unk 0x005C7538
+        g_RenderHelper = new RenderHelper();
         // TODO: Sqrt LUT 0x005A52D0 (within function call)
     }
     return 1;
