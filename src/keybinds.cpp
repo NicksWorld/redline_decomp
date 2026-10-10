@@ -905,3 +905,25 @@ void Keybinds::UnacquireInput() {
 void UnacquireInput() {
     g_Keybinds->UnacquireInput();
 }
+
+// FUNCTION: REDLINE 0x004980EC
+void Keybinds::SetMouseSensitivityFoot(float sensitivity) {
+    struct Locals {
+        float debug_mult;
+        float default_sens;
+    } l;
+    l.default_sens = 2.0f;
+    l.debug_mult = 1.2f;
+    if (sensitivity >= 0.0f) {
+        this->mouse_sens_foot = sensitivity;
+    } else {
+        this->mouse_sens_foot = l.default_sens;
+    }
+    if (g_DebugMouse)
+        this->mouse_sens_foot *= l.debug_mult;
+}
+
+// FUNCTION: REDLINE 0x0043C872
+void SetMouseSensitivityFoot(float sensitivity) {
+    g_Keybinds->SetMouseSensitivityFoot(sensitivity);
+}

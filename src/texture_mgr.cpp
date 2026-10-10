@@ -522,6 +522,17 @@ BitmapHolder::BitmapHolder() {
     this->unk5 = 0;
 }
 
+// FUNCTION: REDLINE 0x00417F52
+void BitmapHolder::ReleaseAllSurfaces() {
+    for (short i = 0; i < this->slot_count; ++i) {
+        if (this->slots[i].surf) {
+            int res = this->slots[i].surf->Release();
+            this->slots[i].surf = NULL;
+            this->slots[i].unk0 = 1;
+        }
+    }
+}
+
 // FUNCTION: REDLINE 0x00418634
 short BitmapHolder::SetRenderer(D3dRenderer* renderer) {
     this->renderer = renderer;
@@ -706,6 +717,11 @@ void RedlineUnloadImage(short slot) {
 // FUNCTION: REDLINE 0x0048EFB5
 void BitmapHolderDraw(short handle, short x_off, short y_off, RECT* rect) {
     g_BitmapHolder->DrawSlot(handle, x_off, y_off, rect);
+}
+
+// FUNCTION: REDLINE 0x0048EEC1
+void ReleaseAllBitmapSurfaces() {
+    g_BitmapHolder->ReleaseAllSurfaces();
 }
 
 // FUNCTION: REDLINE 0x00419557

@@ -230,6 +230,9 @@ char *GetMbuttonName(int idx);
 char *GetJoybuttonName(int idx);
 char *GetJoyhatName(int idx);
 
+
+void SetMouseSensitivityFoot(float sensitivity);
+
 bool InitDirectInput();
 void UnacquireInput();
 
@@ -347,6 +350,8 @@ class Keybinds {
     int InvalidMbuttonIndex(int idx);
     int InvalidJoybuttonIndex(int idx);
     int InvalidJoyhatIndex(int idx);
+
+    void SetMouseSensitivityFoot(float sensitivity);
 
     int InitDirectInput();
     int DeinitDirectInput();

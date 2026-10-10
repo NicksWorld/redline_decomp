@@ -2012,14 +2012,14 @@ int D3dRenderer::InitializeDevice(HWND window, short dev_idx, short d3d_idx, uns
     this->bpp = bpp;
 
     if (this->sel_ddraw != dev_idx) {
-        // TODO: Some method on UnkRenderer
+        ReleaseAllBitmapSurfaces();
         this->ReleaseDdraw();
         if (!this->InitializeDirectDraw(dev_idx))
             return -1;
     }
     if (this->sel_d3d != d3d_idx) {
         this->sel_d3d = d3d_idx;
-        this->ReleaseD3d();
+        this->DeinitD3d();
         if (!this->InitializeD3d()) {
             this->sel_d3d = -1;
             return -1;

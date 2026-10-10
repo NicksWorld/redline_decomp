@@ -90,7 +90,7 @@ struct BitmapSlot {
     short width;
     short bpp; // unsure
     short flags;
-    char pad2[2];
+    short unk0;
     short unk;
     short unk2;
     short unk3;
@@ -108,6 +108,7 @@ class BitmapHolder {
     D3dRenderer* renderer;
     
     BitmapHolder();
+    void ReleaseAllSurfaces();
     short SetRenderer(D3dRenderer* renderer);
     void SetAssetPath(const char* path);
     void AllocSlots(short count);
@@ -128,5 +129,6 @@ void BitmapHolderDraw(short handle, short unk, short unk2, RECT* rect);
 
 short RedlineLoadImage(const char* path, short unk);
 void RedlineUnloadImage(short slot);
+void ReleaseAllBitmapSurfaces();
 
 void SetTexture(short tex);

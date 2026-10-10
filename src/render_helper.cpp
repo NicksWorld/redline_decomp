@@ -10,6 +10,24 @@
 // GLOBAL: REDLINE 0x005C7538
 RenderHelper* g_RenderHelper = NULL;
 
+// FUNCTION: REDLINE 0x004FD1F0
+RenderHelper::RenderHelper() {
+    this->unk = 100;
+    this->unk_len = 1600;
+    this->unk_arr = new RendUnkStruct[this->unk_len];
+    short i;
+
+    for (i = 0; i < 4; ++i) {
+        this->unk_arrs2[i] = new RendUnkStruct[this->unk];
+    }
+
+    short v4 = 0;
+    short v5 = 0;
+    for (i = 0; i < 400; ++i) {
+    }
+
+}
+
 // FUNCTION: REDLINE 0x0048F48B
 short SupportsBlend2() {
     return g_SupportsBlend2;
@@ -101,6 +119,12 @@ void DrawPrimitive(D3DPRIMITIVETYPE ty, int vertexTyDesc, void* verts, unsigned 
     g_Direct3d->D3dDevice()->DrawPrimitive(ty, vertexTyDesc, verts, vertCount, flags);
 
     g_DrawnTriCount += (int)(vertCount * 0.333f);
+}
+
+// FUNCTION: REDLINE 0x0048FDDC
+void DrawIndexedPrimitive(D3DPRIMITIVETYPE ty, int vertexTyDesc, void* verts, int vertexCount, unsigned short* indices, unsigned int indexCount, int flags) {
+    g_DrawnTriCount += (int)(indexCount * 0.333f);
+    g_Direct3d->D3dDevice()->DrawIndexedPrimitive(ty, vertexTyDesc, verts, vertexCount, indices, indexCount, flags);
 }
 
 // FUNCTION: REDLINE 0x004FF552

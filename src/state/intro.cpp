@@ -147,7 +147,7 @@ bool StateImpl::Intro::EventTick() {
     if (BeginScene()) {
         // TODO: sub_43BDB5(0);
         g_Interface->Render(1);
-        // TODO: sub_43CE39 THIS NEXT
+        // TODO: sub_43CE39
         if (g_FadeInComplete)
             g_EndIntroSplash = 0;
         if (g_DoingFadeIn)

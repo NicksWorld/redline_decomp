@@ -133,14 +133,31 @@ class GraphicWidget : public Widget {
     short slot_capacity;
     short slot_count;
 
-    short Render(int unk); // vtable[1]
+    virtual short Render(int unk); // vtable[1]
 
     bool SetImage(const char* name, short unk, short unk2, short width, short height, unsigned short unk3, short unk4, short unk5);
     void AllocImageSlots(short count);
     void UnloadImages();
+    bool LoadImage(const char* name, short left, short top, short right, short bottom, unsigned short unk2, short unk3, short unk4);
+};
+
+// VTABLE: REDLINE 0x005866B4
+class ButtonWidget : public GraphicWidget {
+    public:
+    short unk0;
+    short unk1;
+    short unk2;
+    short unk3;
+
+    ButtonWidget(CInterface* ui);
+
+    virtual short Render(int unk); // vtable[1]
+                                   //
+    void SetButtonUnk(short unk0, short unk1, short unk2);
 };
 
 enum WidgetType {
+    WIDGET_BUTTON = 1,
     WIDGET_GRAPHIC = 2,
 };
 

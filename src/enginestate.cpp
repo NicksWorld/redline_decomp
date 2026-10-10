@@ -11,6 +11,7 @@
 #include "state/av.h"
 #include "state/shutdown.h"
 #include "state/intro.h"
+#include "state/start_menu.h"
 
 #define STATE_STUB(STATE_STUB_NAME)                                            \
     bool STATE_STUB_NAME(int state) {                                          \
@@ -111,10 +112,10 @@ bool EngineState::SetupStates() {
     this->states[STATE_INTRO]->shutdown = StateImpl::Intro::Shutdown;
     this->states[STATE_INTRO]->flag = true;
 
-    this->states[STATE_START_MENU]->event_tick = EventTickStub;
-    this->states[STATE_START_MENU]->tick = TickStub;
-    this->states[STATE_START_MENU]->init = InitStub;
-    this->states[STATE_START_MENU]->shutdown = ShutdownStub;
+    this->states[STATE_START_MENU]->event_tick = StateImpl::StartMenu::EventTick;
+    this->states[STATE_START_MENU]->tick = StateImpl::StartMenu::Tick;
+    this->states[STATE_START_MENU]->init = StateImpl::StartMenu::Init;
+    this->states[STATE_START_MENU]->shutdown = StateImpl::StartMenu::Shutdown;
     this->states[STATE_START_MENU]->flag = false;
 
     this->states[STATE_GAME_INIT]->event_tick = EventTickStub;

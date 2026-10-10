@@ -294,6 +294,9 @@ Widget* CreateWidget(int type, CInterface* gui) {
         gui = g_Interface;
     switch(type) {
         // TODO: 0-6 are valid
+        case WIDGET_BUTTON:
+            widget = new ButtonWidget(gui);
+            break;
         case WIDGET_GRAPHIC:
             widget = new GraphicWidget(gui);
             break;
@@ -453,6 +456,50 @@ void GraphicWidget::UnloadImages() {
     this->slot_count = 0;
 }
 
+// FUNCTION: REDLINE 0x004A1A2B
+bool GraphicWidget::LoadImage(const char* name, short left, short top, short right, short bottom, unsigned short unk2, short unk3, short unk4) {
+    short img = this->ui->LoadImage(name, unk2);
+    if (img < 0)
+        return false;
+    if (this->slot_count >= this->slot_capacity)
+        this->AllocImageSlots(4);
+    this->slots[this->slot_count].rect.left = left;
+    this->slots[this->slot_count].rect.top = top;
+    this->slots[this->slot_count].rect.right = right;
+    this->slots[this->slot_count].rect.bottom = bottom;
+    this->slots[this->slot_count].unk6 = unk3;
+    this->slots[this->slot_count].unk7 = unk4;
+    this->slots[this->slot_count].img = img;
+    this->slot_count++;
+    return true;
+}
+
+// FUNCTION: REDLINE 0x004A1ECF
+ButtonWidget::ButtonWidget(CInterface* ui) : GraphicWidget(ui) {
+    this->ui = ui;
+    this->unk_92 = 1;
+    this->fil_4 = 1;
+    this->unk3 = 0;
+}
+
+// FUNCTION: REDLINE 0x004A1F63
+short ButtonWidget::Render(int unk) {
+    if (this->unk_88)
+        this->unk3 = this->unk2;
+    else
+        this->unk3 = this->unk0;
+    this->unk_114 = this->unk3;
+    GraphicWidget::Render(unk);
+    return 0;
+}
+
+// FUNCTION: REDLINE 0x004A1F1E
+void ButtonWidget::SetButtonUnk(short unk0, short unk1, short unk2) {
+    this->unk0 = unk0;
+    this->unk1 = unk1;
+    this->unk2 = unk2;
+    this->unk3 = unk0;
+}
 
 // FUNCTION: REDLINE 0x004A4CC9
 void CInterface::Render(short unk) {

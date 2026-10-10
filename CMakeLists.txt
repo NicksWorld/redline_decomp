@@ -33,6 +33,7 @@ add_executable(redline WIN32
     src/state/debug.cpp
     src/state/av.cpp
     src/state/intro.cpp
+    src/state/start_menu.cpp
     src/state/shutdown.cpp
 
     res/redline.rc
