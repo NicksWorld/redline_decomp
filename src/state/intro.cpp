@@ -34,13 +34,13 @@ bool IntroWidgetStartup() {
     if (g_IntroWidgetState >= 0) {
         Widget* w = g_IntroWidgets[g_IntroWidgetState];
         if (w) {
-            w->unk_92 = 0;
+            w->active = 0;
         }
     }
     if (++g_IntroWidgetState < 1) {
         Widget* w = g_IntroWidgets[g_IntroWidgetState];
         if (w)
-            w->unk_92 = 1;
+            w->active = 1;
         g_IntroUnk2 = 0;
         g_DoingFadeIn = true;
         g_LegalFadeInOpacity = 255;
@@ -65,7 +65,7 @@ bool StateImpl::Intro::Init(int prev_state) {
                 g_Interface->AddControl(widget);
                 widget->SetUnkFloats(0, 0, 0);
                 widget->SetDescription("Intro Gfx");
-                widget->unk_92 = 0;
+                widget->active = 0;
                 // TODO
                 widget->unk_94 = 1;
                 // TODO: Legal string is part of a table indexed by i

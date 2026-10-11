@@ -97,7 +97,7 @@ class Widget {
     char desc[64];
     short unk_88;
     short unk_90;
-    short unk_92;
+    short active;
     short unk_94;
     CInterface* ui;
     int unk_100;

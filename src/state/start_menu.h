@@ -75,7 +75,26 @@ class MainMenu : public IScreen {
         IScreen* screen10;
         char pad2[12];
         ButtonWidget* btn_credits;
-        char pad2_1[72];
+        ButtonWidget* btn_newgame[2];
+        // ButtonWidget* btn_restart;
+        ButtonWidget* btn_load[2];
+        // ButtonWidget* btn_load_pause;
+        ButtonWidget* btn_save[2];
+        // ButtonWidget* btn_save;
+        ButtonWidget* btn_multiplayer[2];
+        // ButtonWidget* btn_mainmenu;
+
+        void* unk4;
+        void* unk5;
+        ButtonWidget* btn_settings[2];
+        // ButtonWidget* btn_settings_pause;
+        ButtonWidget* btn_quit[2];
+        // ButtonWidget* btn_exit;
+        ButtonWidget* btn_resume[2];
+        // ButtonWidget* btn_training;
+        void* lbl_version[2];
+        // void* lbl_version2;
+
         GraphicWidget* startup_banner;
         char pad3[32];
 
@@ -86,6 +105,10 @@ class MainMenu : public IScreen {
 
         virtual ~MainMenu();
         virtual bool UnknownInit();
+        virtual void Deinit();
+        virtual bool Activate();
+        virtual bool Deactivate();
+        virtual short VMethod7();
 };
 
 class CStartMenu {

@@ -48,7 +48,7 @@ int CInterface::InitGraphics() {
     this->bg_graphic->unk_122 = 0;
     this->bg_graphic->SetUnkFloats(0, 0, 0);
     this->bg_graphic->SetDescription("Background Image");
-    this->bg_graphic->unk_92 = 0;
+    this->bg_graphic->active = 0;
     this->bg_graphic->unk_120 = 0;
 
     this->unk1 = 0; // Weird alignment, maybe supposed to be string null term with wrong index?
@@ -313,7 +313,7 @@ Widget::Widget() {
     this->desc[0] = 0;
     this->unk_88 = 0;
     this->unk_90 = 0;
-    this->unk_92 = 0;
+    this->active = 0;
     this->unk_100 = 0;
     this->unk_104 = 0;
     this->unk_108 = 0;
@@ -367,7 +367,7 @@ void DrawInterfaceImage(short x_off, short y_off, RECT* rect, short img_idx, CIn
 
 // FUNCTION: REDLINE 0x004A1B73
 short GraphicWidget::Render(int unk) {
-    if (!unk && !this->unk_92 && !this->unk_90)
+    if (!unk && !this->active && !this->unk_90)
         return 0;
     if (this->unk_114 < 0 || this->slots[this->unk_114].img == -1)
         return 0;
@@ -477,7 +477,7 @@ bool GraphicWidget::LoadImage(const char* name, short left, short top, short rig
 // FUNCTION: REDLINE 0x004A1ECF
 ButtonWidget::ButtonWidget(CInterface* ui) : GraphicWidget(ui) {
     this->ui = ui;
-    this->unk_92 = 1;
+    this->active = 1;
     this->fil_4 = 1;
     this->unk3 = 0;
 }
