@@ -6,6 +6,8 @@
 #include "../enginestate.h"
 #include "../scripts.h"
 #include "../render.h"
+
+#include <stdio.h>
 #include <winspool.h>
 
 // GLOBAL: REDLINE 0x005A55E4
@@ -26,11 +28,12 @@ CStartMenu::CStartMenu() {
 
 // FUNCTION: REDLINE 0x004414E6
 void CStartMenu::Init() {
-    if (!g_MainMenuInited) {
-        if (!g_Interface) {
-            g_Interface = new CInterface();
-            g_Interface->InitGraphics();
-        }
+    if (g_MainMenuInited) {
+        return;
+    }
+    if (!g_Interface) {
+        g_Interface = new CInterface();
+        g_Interface->InitGraphics();
     }
     this->menu = new MainMenu();
     this->menu->UnknownInit();
@@ -130,13 +133,13 @@ bool MainMenu::AddWidgets() {
     this->unk = 0;
     // TODO: Bunch of initializations of shorts
     this->startup_banner = (GraphicWidget*)CreateWidget(WIDGET_GRAPHIC, g_Interface);
-    this->startup_banner->SetUnkFloats(257, 102, 0);
+    this->startup_banner->SetPosition(257, 102, 0);
     this->startup_banner->active = 0;
     this->startup_banner->SetImage("2Start_active", 0, 0, 144, 14, 0, 0, 0);
     g_Interface->AddControl(this->startup_banner);
 
     this->btn_credits = (ButtonWidget*)CreateWidget(WIDGET_BUTTON, g_Interface);
-    this->btn_credits->SetUnkFloats(180, 394, 0);
+    this->btn_credits->SetPosition(180, 394, 0);
     this->btn_credits->active = 0;
     this->btn_credits->unk_120 = 1;
     this->btn_credits->SetImage("2CREDITS_active", 0, 0, 248, 40, 0, 0, 0);
@@ -146,7 +149,7 @@ bool MainMenu::AddWidgets() {
     g_Interface->AddControl(this->btn_credits);
 
     this->btn_newgame[0]= (ButtonWidget*)CreateWidget(WIDGET_BUTTON, g_Interface);
-    this->btn_newgame[0]->SetUnkFloats(253, 135, 0);
+    this->btn_newgame[0]->SetPosition(253, 135, 0);
     this->btn_newgame[0]->active = 0;
     this->btn_newgame[0]->unk_120 = 1;
     this->btn_newgame[0]->SetImage("2NEW_active", 0, 0, 152, 28, 0, 0, 0);
@@ -156,7 +159,7 @@ bool MainMenu::AddWidgets() {
     g_Interface->AddControl(this->btn_newgame[0]);
 
     this->btn_newgame[1] = (ButtonWidget*)CreateWidget(WIDGET_BUTTON, g_Interface);
-    this->btn_newgame[1]->SetUnkFloats(235, 146, 0);
+    this->btn_newgame[1]->SetPosition(235, 146, 0);
     this->btn_newgame[1]->active = 0;
     this->btn_newgame[1]->unk_120 = 1;
     this->btn_newgame[1]->SetImage("PU1RESTART_active", 0, 0, 168, 22, 0, 0, 0);
@@ -168,7 +171,7 @@ bool MainMenu::AddWidgets() {
     this->btn_save[0] = NULL;
 
     this->btn_save[1] = (ButtonWidget*)CreateWidget(WIDGET_BUTTON, g_Interface);
-    this->btn_save[1]->SetUnkFloats(235, 172, 0);
+    this->btn_save[1]->SetPosition(235, 172, 0);
     this->btn_save[1]->active = 0;
     this->btn_save[1]->unk_120 = 1;
     this->btn_save[1]->SetImage("PU1SAVE_active", 0, 0, 168, 22, 0, 0, 0);
@@ -178,7 +181,7 @@ bool MainMenu::AddWidgets() {
     g_Interface->AddControl(this->btn_save[1]);
 
     this->btn_load[0]= (ButtonWidget*)CreateWidget(WIDGET_BUTTON, g_Interface);
-    this->btn_load[0]->SetUnkFloats(253, 171, 0);
+    this->btn_load[0]->SetPosition(253, 171, 0);
     this->btn_load[0]->active = 0;
     this->btn_load[0]->unk_120 = 1;
     this->btn_load[0]->SetImage("2LOAD_active", 0, 0, 152, 28, 0, 0, 0);
@@ -188,7 +191,7 @@ bool MainMenu::AddWidgets() {
     g_Interface->AddControl(this->btn_load[0]);
 
     this->btn_load[1] = (ButtonWidget*)CreateWidget(WIDGET_BUTTON, g_Interface);
-    this->btn_load[1]->SetUnkFloats(235, 198, 0);
+    this->btn_load[1]->SetPosition(235, 198, 0);
     this->btn_load[1]->active = 0;
     this->btn_load[1]->unk_120 = 1;
     this->btn_load[1]->SetImage("PU1LOAD_active", 0, 0, 168, 22, 0, 0, 0);
@@ -198,7 +201,7 @@ bool MainMenu::AddWidgets() {
     g_Interface->AddControl(this->btn_load[1]);
 
     this->btn_multiplayer[0]= (ButtonWidget*)CreateWidget(WIDGET_BUTTON, g_Interface);
-    this->btn_multiplayer[0]->SetUnkFloats(253, 207, 0);
+    this->btn_multiplayer[0]->SetPosition(253, 207, 0);
     this->btn_multiplayer[0]->active = 0;
     this->btn_multiplayer[0]->unk_120 = 1;
     this->btn_multiplayer[0]->SetImage("2MULTI_active", 0, 0, 152, 28, 0, 0, 0);
@@ -208,7 +211,7 @@ bool MainMenu::AddWidgets() {
     g_Interface->AddControl(this->btn_multiplayer[0]);
 
     this->btn_multiplayer[1] = (ButtonWidget*)CreateWidget(WIDGET_BUTTON, g_Interface);
-    this->btn_multiplayer[1]->SetUnkFloats(235, 224, 0);
+    this->btn_multiplayer[1]->SetPosition(235, 224, 0);
     this->btn_multiplayer[1]->active = 0;
     this->btn_multiplayer[1]->unk_120 = 1;
     this->btn_multiplayer[1]->SetImage("PU1MAIN_active", 0, 0, 168, 22, 0, 0, 0);
@@ -218,7 +221,7 @@ bool MainMenu::AddWidgets() {
     g_Interface->AddControl(this->btn_multiplayer[1]);
 
     this->btn_settings[0]= (ButtonWidget*)CreateWidget(WIDGET_BUTTON, g_Interface);
-    this->btn_settings[0]->SetUnkFloats(253, 243, 0);
+    this->btn_settings[0]->SetPosition(253, 243, 0);
     this->btn_settings[0]->active = 0;
     this->btn_settings[0]->unk_120 = 1;
     this->btn_settings[0]->SetImage("2SET_active", 0, 0, 152, 28, 0, 0, 0);
@@ -228,7 +231,7 @@ bool MainMenu::AddWidgets() {
     g_Interface->AddControl(this->btn_settings[0]);
 
     this->btn_settings[1] = (ButtonWidget*)CreateWidget(WIDGET_BUTTON, g_Interface);
-    this->btn_settings[1]->SetUnkFloats(235, 251, 0);
+    this->btn_settings[1]->SetPosition(235, 251, 0);
     this->btn_settings[1]->active = 0;
     this->btn_settings[1]->unk_120 = 1;
     this->btn_settings[1]->SetImage("PU1SET_active", 0, 0, 168, 22, 0, 0, 0);
@@ -238,7 +241,7 @@ bool MainMenu::AddWidgets() {
     g_Interface->AddControl(this->btn_settings[1]);
 
     this->btn_resume[1] = (ButtonWidget*)CreateWidget(WIDGET_BUTTON, g_Interface);
-    this->btn_resume[1]->SetUnkFloats(253, 279, 0);
+    this->btn_resume[1]->SetPosition(253, 279, 0);
     this->btn_resume[1]->active = 0;
     this->btn_resume[1]->unk_120 = 1;
     this->btn_resume[1]->SetImage("2TRAIN_active", 0, 0, 152, 28, 0, 0, 0);
@@ -248,7 +251,7 @@ bool MainMenu::AddWidgets() {
     g_Interface->AddControl(this->btn_resume[1]);
 
     this->btn_quit[0] = (ButtonWidget*)CreateWidget(WIDGET_BUTTON, g_Interface);
-    this->btn_quit[0]->SetUnkFloats(253, 315, 0);
+    this->btn_quit[0]->SetPosition(253, 315, 0);
     this->btn_quit[0]->active = 0;
     this->btn_quit[0]->unk_120 = 1;
     this->btn_quit[0]->SetImage("2Quit_active", 0, 0, 152, 28, 0, 0, 0);
@@ -258,7 +261,7 @@ bool MainMenu::AddWidgets() {
     g_Interface->AddControl(this->btn_quit[0]);
 
     this->btn_quit[1] = (ButtonWidget*)CreateWidget(WIDGET_BUTTON, g_Interface);
-    this->btn_quit[1]->SetUnkFloats(235, 277, 0);
+    this->btn_quit[1]->SetPosition(235, 277, 0);
     this->btn_quit[1]->active = 0;
     this->btn_quit[1]->unk_120 = 1;
     this->btn_quit[1]->SetImage("PU1EXIT_active", 0, 0, 168, 22, 0, 0, 0);
@@ -268,7 +271,7 @@ bool MainMenu::AddWidgets() {
     g_Interface->AddControl(this->btn_quit[1]);
 
     this->btn_resume[0] = (ButtonWidget*)CreateWidget(WIDGET_BUTTON, g_Interface);
-    this->btn_resume[0]->SetUnkFloats(294, 322, 0);
+    this->btn_resume[0]->SetPosition(294, 322, 0);
     this->btn_resume[0]->active = 0;
     this->btn_resume[0]->unk_120 = 1;
     this->btn_resume[0]->SetImage("PU1RESUME_active", 0, 0, 104, 10, 0, 0, 0);
@@ -278,7 +281,23 @@ bool MainMenu::AddWidgets() {
     g_Interface->AddControl(this->btn_resume[0]);
 
     // TODO: Version labels
+    char version_buffer[32];
+    sprintf(version_buffer, "V%d.%d", 1, 0);
+    this->lbl_version[0] = (LabelWidget*)CreateWidget(0, g_Interface);
+    this->lbl_version[0]->SetPosition(570, 60, 0);
+    this->lbl_version[0]->SetText(version_buffer);
+    this->lbl_version[0]->unk_120 = 0;
+    this->lbl_version[0]->active = 0;
+    this->lbl_version[0]->unk_94 = 2;
+    g_Interface->AddControl(this->lbl_version[0]);
 
+    this->lbl_version[1] = (LabelWidget*)CreateWidget(0, g_Interface);
+    this->lbl_version[1]->SetPosition(300, 302, 0);
+    this->lbl_version[1]->SetText(version_buffer);
+    this->lbl_version[1]->unk_120 = 0;
+    this->lbl_version[1]->active = 0;
+    this->lbl_version[1]->unk_94 = 2;
+    g_Interface->AddControl(this->lbl_version[1]);
     // TODO: call method that sets up keyboard navigation
     return true;
 }
@@ -291,15 +310,27 @@ void MainMenu::Deinit() {
 // FUNCTION: REDLINE 0x004B259C
 bool MainMenu::Activate() {
     bool gameplay = false;
-    if (g_unkBool /* means multiplayer */) {
-        // paused = unk != 0;
+    if (g_isMultiplayer) {
+        gameplay = g_GameplayActive;
     }
 
-    if (false/*unk*/) {
-        // TODO: Pause menus
+    if (g_GameplayActive) {
+        this->unk2 = 1;
+        if (g_isMultiplayer) {
+            g_Interface->SetBackground("mpbase", 192, 176, 256, 128, 2);
+            g_Interface->ActivateBackground(192, 176, 256, 128, 2);
+            // TODO
+        } else {
+            g_Interface->SetBackground("PU1_base", 192, 100, 256, 256, 2);
+            g_Interface->ActivateBackground(192, 100, 256, 256, 2);
+            // TODO
+        }
     } else {
         this->unk2 = 0;
+        g_Interface->SetBackground("2base", 0, 0, 640, 480, 0);
+        g_Interface->ActivateBackground(0, 0, 640, 480, 0);
         // TODO: Call that sets the interface background and stuff
+        this->startup_banner->active = true;
     }
     // TODO
 
@@ -321,7 +352,9 @@ bool MainMenu::Activate() {
     this->btn_multiplayer[this->unk2]->active = 1;
     this->btn_settings[this->unk2]->active = 1;
     this->btn_quit[this->unk2]->active = 1;
-    // TODO: lbl_version
+    this->lbl_version[this->unk2]->active = 1;
+
+    // TODO: Is this->unk just the active subscreen pointer?
 
     // TODO: Interface calls
     return true;
@@ -355,13 +388,13 @@ ConfirmationDialog::~ConfirmationDialog() {
 // FUNCTION: REDLINE 0x004ABFD3
 bool ConfirmationDialog::AddWidgets() {
     this->img_prompt = (GraphicWidget*)CreateWidget(WIDGET_GRAPHIC, g_Interface);
-    this->img_prompt->SetUnkFloats(249, 212, 0);
+    this->img_prompt->SetPosition(249, 212, 0);
     this->img_prompt->active = 0;
     this->img_prompt->unk_120 = 1;
     g_Interface->AddControl(this->img_prompt);
 
     this->btn_yes = (ButtonWidget*)CreateWidget(WIDGET_BUTTON, g_Interface);
-    this->btn_yes->SetUnkFloats(252, 245, 0);
+    this->btn_yes->SetPosition(252, 245, 0);
     this->btn_yes->active = 0;
     this->btn_yes->unk_120 = 1;
     this->btn_yes->SetImage("PU1YES_active", 0, 0, 64, 22, 0, 0, 0);
@@ -371,7 +404,7 @@ bool ConfirmationDialog::AddWidgets() {
     g_Interface->AddControl(this->btn_yes);
 
     this->btn_no = (ButtonWidget*)CreateWidget(WIDGET_BUTTON, g_Interface);
-    this->btn_no->SetUnkFloats(324, 245, 0);
+    this->btn_no->SetPosition(324, 245, 0);
     this->btn_no->active = 0;
     this->btn_no->unk_120 = 1;
     this->btn_no->SetImage("PU1NO_active", 0, 0, 64, 22, 0, 0, 0);
@@ -387,7 +420,7 @@ bool ConfirmationDialog::AddWidgets() {
 // FUNCTION: REDLINE 0x004AC210
 void ConfirmationDialog::SetPromptImage(const char* img, short width, short height, short x, short y) {
     this->img_prompt->SetImage(img, 0, 0, width, height, 2, 0, 0);
-    this->img_prompt->SetUnkFloats(x, y, 0);
+    this->img_prompt->SetPosition(x, y, 0);
 }
  
 // FUNCTION: REDLINE 0x004ABD94
@@ -436,6 +469,9 @@ short ConfirmationDialog::VMethod7() {
     return 0;
 }
 
+// GLOBAL: REDLINE 0x005CD028
+bool g_GameplayActive = false;
+
 // FUNCTION: REDLINE 0x00541020
 bool StateImpl::StartMenu::Init(int prev_state) {
     UnacquireInput();
@@ -450,7 +486,7 @@ bool StateImpl::StartMenu::Init(int prev_state) {
     if (g_ConnectDirect == 1 || g_LobbyEnabled == 1 || g_ConsoleEnabled == 1) {
         unk = 1;
     } else {
-        g_unkBool = 0;
+        g_isMultiplayer = 0;
     }
 
     if (g_QuickRun && prev_state != STATE_GAME_PLAY && !unk) {
@@ -459,7 +495,7 @@ bool StateImpl::StartMenu::Init(int prev_state) {
         // TODO
         return true;
     } else {
-        // TODO: 5CD028 = 0
+        g_GameplayActive = false;
         if (!g_MainMenuInited) {
             g_MainMenuInited = 1;
             g_StartMenu->InitMenu();

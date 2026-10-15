@@ -252,7 +252,7 @@ int open_launcher(int nCmdShow) {
                 res = 6;
                 break;
             case 2:
-                g_unkBool = true;
+                g_isMultiplayer = true;
                 v2 = 1;
                 break;
             case 1:
@@ -920,7 +920,7 @@ bool StateImpl::Debug::EventTick() {
             case 5:
                 return 0;
             case 2:
-                g_unkBool = true;
+                g_isMultiplayer = true;
                 break;
             case 6:
                 open_display_settings = true;
@@ -945,7 +945,7 @@ bool StateImpl::Debug::EventTick() {
     }
 
     // TODO: Set global bool
-    if (g_unkBool) v5 = 0;
+    if (g_isMultiplayer) v5 = 0;
     StateNode* next = g_StateTree->Next(v5);
     if (!next)
         return 0;

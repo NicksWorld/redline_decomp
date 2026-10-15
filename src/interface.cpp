@@ -41,17 +41,17 @@ int CInterface::InitGraphics() {
 
     this->unk2 = 624;
     this->unk3 = 464;
-    this->unk0 = 0;
+    this->bg_active = 0;
 
     this->bg_graphic = new GraphicWidget(this);
 
     this->bg_graphic->unk_122 = 0;
-    this->bg_graphic->SetUnkFloats(0, 0, 0);
-    this->bg_graphic->SetDescription("Background Image");
+    this->bg_graphic->SetPosition(0, 0, 0);
+    this->bg_graphic->SetText("Background Image");
     this->bg_graphic->active = 0;
     this->bg_graphic->unk_120 = 0;
 
-    this->unk1 = 0; // Weird alignment, maybe supposed to be string null term with wrong index?
+    this->bg_graphic_name[0] = '\0';
     return 1;
 }
 
@@ -194,6 +194,68 @@ int CInterface::LoadFont(const char* name) {
     return 1;
 }
 
+// FUNCTION: REDLINE 0x004A560A
+Font* CInterface::GetFontHandle(short idx) {
+    if (idx < this->font_count) {
+        return &this->fonts[idx];
+    }
+    return NULL;
+}
+
+// FUNCTION: REDLINE 0x004A5879
+short DrawGlyph(unsigned char c, unsigned short x, unsigned short y, Font* font, CInterface* opt_ui) {
+    CInterface* ui;
+    if (!opt_ui)
+        ui = g_Interface;
+    else
+        ui = opt_ui;
+
+    if (!font)
+        return x;
+
+    short width = font->glyphs[c].width;
+    short y_off = font->glyphs[c].y_off;
+    if (font->glyphs[c].idx < 0 || width <= 0)
+        return x;
+    if (c == ' ')
+        return width + x;
+
+    RECT rect;
+    rect.left = font->tile_width * font->glyphs[c].col;
+    rect.top = font->tile_height * font->glyphs[c].row;
+    rect.right = width + rect.left;
+    rect.bottom = font->tile_height + rect.top;
+    short y_pos = y - y_off;
+    if (width + x < 640) {
+        short handle = ui->GetImageHandle(font->bitmap);
+        BitmapHolderDraw(handle, x, y_pos, &rect);
+    }
+    return font->line_spacing + width + x;
+}
+
+// FUNCTION: REDLINE 0x004A575B
+short DrawText(const char* text, short x, short y, Font* font, CInterface* opt_ui) {
+    struct Locals {
+        int i;
+        CInterface * ui;
+    } l;
+
+    if (!opt_ui)
+        l.ui = g_Interface;
+    else
+        l.ui = opt_ui;
+    l.i = strlen(text);
+    while (l.i > 0) {
+        if (x > 639) {
+            x = 639;
+            break;
+        }
+        x = DrawGlyph(*text++, x, y, font, l.ui);
+        --l.i;
+    }
+    return x;
+}
+
 // FUNCTION: REDLINE 0x004A45FA
 void CInterface::ReleaseImage(short slot) {
     // Reduce refcount (and possibly free) an image
@@ -248,6 +310,26 @@ short CInterface::LoadImage(const char* name, short unk) {
     return idx;
 }
 
+// FUNCTION: REDLINE 0x004A5643
+bool CInterface::SetBackground(const char* name, short x, short y, short width, short height, unsigned short unk) {
+    if (!strcmp(this->bg_graphic_name, name))
+        return true;
+    this->bg_graphic->UnloadImages();
+    strcpy(this->bg_graphic_name, name);
+    if (this->bg_active) {
+        this->bg_graphic->SetPosition(x, y, 0);
+        return this->bg_graphic->SetImage(name, 0, 0, width, height, unk, 0, 0);
+    }
+    return true;
+}
+
+// FUNCTION: REDLINE 0x004A56E0
+bool CInterface::ActivateBackground(short x, short y, short width, short height, unsigned short unk) {
+    this->bg_active = 1;
+    this->bg_graphic->SetPosition(x, y, 0);
+    return this->bg_graphic->SetImage(this->bg_graphic_name, 0, 0, width, height, unk, 0, 0);
+}
+
 // FUNCTION: REDLINE 0x004A45CE
 short CInterface::GetImageHandle(short img) {
     if (img < 0)
@@ -294,6 +376,9 @@ Widget* CreateWidget(int type, CInterface* gui) {
         gui = g_Interface;
     switch(type) {
         // TODO: 0-6 are valid
+        case WIDGET_LABEL:
+            widget = new LabelWidget(gui);
+            break;
         case WIDGET_BUTTON:
             widget = new ButtonWidget(gui);
             break;
@@ -307,10 +392,10 @@ Widget* CreateWidget(int type, CInterface* gui) {
 // FUNCTION: REDLINE 0x004A0163
 Widget::Widget() {
     // this->vtable = (void **)&off_58660C;
-    this->unk_4 = 0;
-    this->unk_0 = 0;
+    this->pos_y = 0;
+    this->pos_x = 0;
     this->unk_20 = 0;
-    this->desc[0] = 0;
+    this->text[0] = 0;
     this->unk_88 = 0;
     this->unk_90 = 0;
     this->active = 0;
@@ -328,18 +413,18 @@ Widget::Widget() {
 }
 
 // FUNCTION: REDLINE 0x004A02B1
-void Widget::SetDescription(const char* desc) {
+void Widget::SetText(const char* desc) {
     short len = strlen(desc);
     if (len > 63)
         len = 63;
-    memcpy(this->desc, desc, len);
-    this->desc[len] = 0;
+    memcpy(this->text, desc, len);
+    this->text[len] = 0;
 }
 
 // FUNCTION: REDLINE 0x004A0242
-void Widget::SetUnkFloats(short a, short b, short c) {
-    this->unk_0 = a;
-    this->unk_4 = b;
+void Widget::SetPosition(short x, short y, short c) {
+    this->pos_x = x;
+    this->pos_y = y;
     this->unk_8 = c;
 }
 
@@ -373,13 +458,13 @@ short GraphicWidget::Render(int unk) {
         return 0;
 
     DrawInterfaceImage(
-            this->slots[this->unk_114].unk6 + this->unk_0, // x_off (atlas?)
-            this->slots[this->unk_114].unk7 + this->unk_4, // y_off (atlas?)
+            this->slots[this->unk_114].unk6 + this->pos_x, // x_off (atlas?)
+            this->slots[this->unk_114].unk7 + this->pos_y, // y_off (atlas?)
             &this->slots[this->unk_114].rect,
             this->slots[this->unk_114].img,
             this->ui);
-    this->unk_12 = this->slots[this->unk_114].unk6 + this->unk_0;
-    this->unk_14 = this->slots[this->unk_114].unk7 + this->unk_4;
+    this->unk_12 = this->slots[this->unk_114].unk6 + this->pos_x;
+    this->unk_14 = this->slots[this->unk_114].unk7 + this->pos_y;
 
     this->width = LOWORD(this->slots[this->unk_114].rect.right) + this->unk_12;
     this->height = LOWORD(this->slots[this->unk_114].rect.bottom) + this->unk_14;
@@ -501,9 +586,33 @@ void ButtonWidget::SetButtonUnk(short unk0, short unk1, short unk2) {
     this->unk3 = unk0;
 }
 
+// FUNCTION: REDLINE 0x004A05A0
+LabelWidget::LabelWidget(CInterface* ui) : Widget() {
+    this->ui = ui;
+    this->unk0 = 3;
+    this->unk1 = -1;
+}
+
+// FUNCTION: REDLINE 0x004A05E2
+short LabelWidget::Render(int unk) {
+    if (!unk && !this->active && !this->unk_90)
+        return 0;
+    this->unk_12 = this->pos_x;
+    this->unk_14 = this->pos_y;
+
+    short font_idx = (this->unk_88 && this->unk1 >= 0) ? this->unk1 : this->unk_94;
+    Font* font = this->ui->GetFontHandle(font_idx);
+
+    this->width = DrawText(this->text, this->pos_x, this->pos_y, font, NULL);
+    this->height = font->tile_width + this->unk_14;
+    this->unk0 = 0;
+
+    return this->unk_90;
+}
+
 // FUNCTION: REDLINE 0x004A4CC9
 void CInterface::Render(short unk) {
-    if (this->unk0) {
+    if (this->bg_active) {
         this->bg_graphic->Render(1);
     }
 

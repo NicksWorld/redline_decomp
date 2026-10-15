@@ -58,7 +58,9 @@ short g_ZEnabled;
 void SetZEnable(short en) {
     if (g_ZEnabled != en) {
         g_ZEnabled = en;
-        g_Direct3d->D3dDevice()->SetRenderState(D3DRENDERSTATE_ZENABLE, en != 0);
+        if (en)
+            en = 1;
+        g_Direct3d->D3dDevice()->SetRenderState(D3DRENDERSTATE_ZENABLE, en);
     }
 }
 

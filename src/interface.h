@@ -48,9 +48,9 @@ class CInterface {
     GraphicWidget* unk_graphic;
     GraphicWidget* mouse_graphic;
     GraphicWidget* bg_graphic;
-    char unk0;
-    char unk1;
-    char pad0[130];
+    char bg_active;
+    char bg_graphic_name[64];
+    char pad0[67];
     Font fonts[11];
     short font_count;
     ImageRef images[375];
@@ -65,9 +65,15 @@ class CInterface {
     CInterface();
 
     int InitGraphics();
+
     int LoadFont(const char* name);
+    Font* GetFontHandle(short idx);
+
     short LoadImage(const char* name, short unk);
     short GetImageHandle(short img);
+
+    bool SetBackground(const char* name, short x, short y, short width, short height, unsigned short unk);
+    bool ActivateBackground(short x, short y, short width, short height, unsigned short unk);
 
     void ReleaseImage(short slot);
 
@@ -81,10 +87,10 @@ class Widget {
     public:
     // TODO: 10 virtual methods
     virtual short Render(int unk) = 0; // TODO vtable[1]
-    virtual void SetDescription(const char* desc); // vtable[5];
+    virtual void SetText(const char* desc); // vtable[5];
     Widget();
-    float unk_0;
-    float unk_4;
+    float pos_x;
+    float pos_y;
     float unk_8;
 
     // Possibly left/top/right/bottom
@@ -94,7 +100,7 @@ class Widget {
     short height;
 
     int unk_20;
-    char desc[64];
+    char text[64];
     short unk_88;
     short unk_90;
     short active;
@@ -112,7 +118,7 @@ class Widget {
     int unk_124;
     int unk_128;
 
-    void SetUnkFloats(short a, short b, short c);
+    void SetPosition(short a, short b, short c);
 };
 
 struct GraphicImageSlot {
@@ -156,7 +162,22 @@ class ButtonWidget : public GraphicWidget {
     void SetButtonUnk(short unk0, short unk1, short unk2);
 };
 
+// VTABLE: REDLINE 0x00586634
+class LabelWidget : public Widget {
+    public:
+    LabelWidget(CInterface* ui);
+
+    virtual short Render(int unk); // vtable[1]
+
+    char pad[4];
+    short unk0;
+    char pad2[6];
+    short unk1;
+    char pad3[2];
+};
+
 enum WidgetType {
+    WIDGET_LABEL = 0,
     WIDGET_BUTTON = 1,
     WIDGET_GRAPHIC = 2,
 };

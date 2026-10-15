@@ -56,7 +56,7 @@ HANDLE g_HeartbeatThread;
 HANDLE g_MainThread;
 
 // GLOBAL: REDLINE 0x005ce600
-bool g_unkBool;
+bool g_isMultiplayer;
 
 // GLOBAL: REDLINE 0x005CE8FC
 bool g_PublicGame;
@@ -131,7 +131,7 @@ BOOL RegisterWindowClass() {
 void InitGlobals() {
     // strcpy(&byte_5CE6EC, "man");
     // strcat(&Buffer, "none_selected.wld");
-    g_unkBool = 0;
+    g_isMultiplayer = 0;
     g_has3DNow = 0;
     // byte_5CE602 = 0;
     // byte_5CE8FE = 0;

@@ -56,7 +56,7 @@ extern bool g_LobbyEnabled;
 
 extern bool g_StateStartupComplete;
 
-extern bool g_unkBool;
+extern bool g_isMultiplayer;
 extern bool g_DemoSystemActive;
 
 extern int g_WindowCreated;
@@ -79,6 +79,8 @@ extern short g_UsePalettedTextures;
 extern short g_UseEnviroMapping;
 extern short g_UseDither;
 extern short g_UseMips;
+
+extern bool g_GameplayActive;
 
 #define GLOBAL_STRING_SIZE 128
 // Configurable Values

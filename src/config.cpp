@@ -986,35 +986,36 @@ DefaultConfValue g_ConfDefaultDebug[20] = {
 
 // FUNCTION: REDLINE 0x0043df94
 void Config::DefaultConf() {
-    int i = 0;
+    struct Locals {
+        int i;
+        Value *v;
+    } l;
+    l.i = 0;
     this->ClearConfValues();
-    while (g_ConfDefault[i].name[0]) {
-        Value *v = new Value();
-        v->kind = g_ConfDefault[i].kind;
-        strcpy(v->name, g_ConfDefault[i].name);
-        strlwr(v->name);
-
-        switch (v->kind) {
-        case 0:
-        case 3:
-            v->value.integer = *(int *)g_ConfDefault[i].value;
-            break;
-        case 4:
-            v->value.integer = *(bool *)g_ConfDefault[i].value;
-            break;
-        case 1:
-            v->value.decimal = *(float *)g_ConfDefault[i].value;
-            break;
-        case 2:
-            v->value.string = strdup((char *)g_ConfDefault[i].value);
-            break;
-        default:
-            break;
+    while (g_ConfDefault[l.i].name[0]) {
+        l.v = new Value();
+        l.v->kind = g_ConfDefault[l.i].kind;
+        strcpy(l.v->name, g_ConfDefault[l.i].name);
+        strlwr(l.v->name);
+        switch (l.v->kind) {
+            case 0:
+            case 3:
+                l.v->value.integer = *(int *)g_ConfDefault[l.i].value;
+                break;
+            case 4:
+                l.v->value.integer = *(bool *)g_ConfDefault[l.i].value;
+                break;
+            case 1:
+                l.v->value.decimal = *(float *)g_ConfDefault[l.i].value;
+                break;
+            case 2:
+                l.v->value.string = strdup((char *)g_ConfDefault[l.i].value);
+                break;
+            default:
+                break;
         }
-
-        this->StoreValue(v);
-
-        ++i;
+        this->StoreValue(l.v);
+        ++l.i;
     }
 }
 
@@ -1068,14 +1069,14 @@ void Config::Default() {
 // FUNCTION: REDLINE 0x0043DF05
 int Config::Write() {
     FILE* file = fopen("redline.cfg", "w");
-    if (file) {
-        this->PopulateDefaults();
-        this->WriteHeader(file);
-        this->WriteMappings(file);
-        this->WriteValues(file);
-        fflush(file);
-        fclose(file);
-    }
+    if (!file)
+        return 0;
+    this->PopulateDefaults();
+    this->WriteHeader(file);
+    this->WriteMappings(file);
+    this->WriteValues(file);
+    fflush(file);
+    fclose(file);
     return 0;
 }
 

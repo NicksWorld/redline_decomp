@@ -92,7 +92,7 @@ class MainMenu : public IScreen {
         // ButtonWidget* btn_exit;
         ButtonWidget* btn_resume[2];
         // ButtonWidget* btn_training;
-        void* lbl_version[2];
+        LabelWidget* lbl_version[2];
         // void* lbl_version2;
 
         GraphicWidget* startup_banner;

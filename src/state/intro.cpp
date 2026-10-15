@@ -63,8 +63,8 @@ bool StateImpl::Intro::Init(int prev_state) {
             if (widget) {
                 g_IntroWidgets[i] = widget;
                 g_Interface->AddControl(widget);
-                widget->SetUnkFloats(0, 0, 0);
-                widget->SetDescription("Intro Gfx");
+                widget->SetPosition(0, 0, 0);
+                widget->SetText("Intro Gfx");
                 widget->active = 0;
                 // TODO
                 widget->unk_94 = 1;
