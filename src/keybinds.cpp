@@ -603,7 +603,7 @@ InputDevice::InputDevice() {
 }
 
 // SYNTHETIC: REDLINE 0x00496A30
-// InputDevice::ScalarDeletingDestructor
+// InputDevice::`scalar deleting destructor'
 
 // FUNCTION: REDLINE 0x0049522E
 InputDevice::~InputDevice() {
@@ -628,6 +628,31 @@ int InputDevice::Init(const char* name, HWND window) {
     return 0;
 }
 
+// FUNCTION: REDLINE 0x0049528A
+bool InputDevice::Acquire() {
+    this->dev->Acquire();
+    this->acquired = 1;
+    return this->acquired;
+}
+
+// FUNCTION: REDLINE 0x00496A60
+bool InputDevice::Acquired() {
+    return this->acquired;
+}
+
+// FUNCTION: REDLINE 0x00496A80
+bool InputDevice::GetKeyState(char keys[256]) {
+    return false;
+}
+// FUNCTION: REDLINE 0x00496A90
+bool InputDevice::GetMouseState(short axes[3], int buttons[3]) {
+    return false;
+}
+// FUNCTION: REDLINE 0x00496AA0
+bool InputDevice::GetGamepadState() {
+    return false;
+}
+
 // FUNCTION: REDLINE 0x0049573F
 int MouseDevice::Init(const char* name, HWND window) {
     InputDevice::Init(name, window);
@@ -645,6 +670,36 @@ int MouseDevice::Init(const char* name, HWND window) {
     if (res)
         return 1;
     return 0;
+}
+
+// FUNCTION: REDLINE 0x00495504
+bool MouseDevice::GetMouseState(short axes[3], int buttons[3]) {
+    bool success = 1;
+    int res = this->dev->GetDeviceState(16, &this->mouseState);
+
+    switch (res) {
+        case DI_OK:
+            axes[0] = min(max(-32767, this->mouseState.lX), 32767);
+            axes[1] = min(max(-32767, this->mouseState.lY), 32767);
+            axes[2] = min(max(-32767, this->mouseState.lZ), 32767);
+
+            buttons[0] = this->mouseState.rgbButtons[0] & 0x80;
+            buttons[1] = this->mouseState.rgbButtons[0] & 0x80;
+            buttons[2] = this->mouseState.rgbButtons[0] & 0x80;
+            break;
+        case DIERR_INPUTLOST:
+            if (this->acquired)
+                this->Acquire();
+            success = 0;
+            break;
+        case DIERR_NOTACQUIRED:
+            success = 0;
+            if (this->acquired)
+                this->Acquire();
+            break;
+    }
+
+    return success;
 }
 
 // FUNCTION: REDLINE 0x00495B87
@@ -722,6 +777,12 @@ int JoystickDevice::Init(const char* name, HWND window) {
     return 0;
 }
 
+// FUNCTION: REDLINE 0x004957E7
+bool JoystickDevice::GetGamepadState() {
+    // TODO
+    return false;
+}
+
 // FUNCTION: REDLINE 0x00495E26
 int GamepadDevice::Init(const char* name, HWND window) {
     int res = JoystickDevice::Init(name, window);
@@ -735,6 +796,12 @@ int GamepadDevice::Init(const char* name, HWND window) {
     return 0;
 }
 
+// FUNCTION: REDLINE 0x00495E90
+bool GamepadDevice::GetGamepadState() {
+    // TODO
+    return false;
+}
+
 // FUNCTION: REDLINE 0x00495488
 int KeyboardDevice::Init(const char* name, HWND window) {
     InputDevice::Init(name, window);
@@ -745,6 +812,43 @@ int KeyboardDevice::Init(const char* name, HWND window) {
     if (res)
         return 1;
     return 0;
+}
+
+// FUNCTION: REDLINE 0x004953B0
+bool KeyboardDevice::GetKeyState(char keys[256]) {
+    struct Locals {
+        int res;
+        bool success;
+    } l;
+    l.success = true;
+    l.res = this->dev->GetDeviceState(256, keys);
+    switch(l.res) {
+        case DI_OK:
+            break;
+        case DIERR_INPUTLOST:
+            if (this->acquired)
+                this->Acquire();
+            l.success = 0;
+            break;
+        case DIERR_NOTACQUIRED:
+            l.success = 0;
+            if (this->acquired)
+                this->Acquire();
+            break;
+        case DIERR_INVALIDPARAM:
+            l.success = 0;
+            break;
+        case DIERR_NOTINITIALIZED:
+            l.success = 0;
+            break;
+        case E_PENDING:
+            l.success = 0;
+            break;
+        default:
+            l.success = 0;
+            break;
+    }
+    return l.success;
 }
 
 // FUNCTION: REDLINE 0x004999C7
@@ -876,6 +980,46 @@ int Keybinds::InitDirectInput() {
     // TODO: Bunch of memsetting into unk segments.
     // Good for reference on member size
     return 0;
+}
+
+// FUNCTION: REDLINE 0x004971A6
+void Keybinds::ReadInput() {
+    // TODO
+    int i, j;
+    char keys[256];
+    short mouse_axes[3];
+    short mouse_coords[3];
+    int mouse_buttons[3];
+    for (i = 0; i < this->input_device_count; ++i) {
+        if (!this->input_devices[i]->Acquired())
+            continue;
+        bool hasInput = this->input_devices[i]->GetKeyState(keys);
+        if (hasInput) {
+            for (j = 0; j < 256; ++j) {
+                this->keys[j] = keys[j];
+            }
+        }
+
+        hasInput = this->input_devices[i]->GetMouseState(mouse_axes, mouse_buttons);
+        if (hasInput) {
+            mouse_coords[0] = mouse_axes[0];
+            this->mouse_pos[0] = mouse_axes[0];
+            mouse_coords[1] = mouse_axes[1];
+            this->mouse_pos[1] = mouse_axes[1];
+            mouse_coords[2] = mouse_axes[2];
+            this->mouse_pos[2] = mouse_axes[2];
+            for (j = 0; j < 3; ++j) {
+                this->mouse_buttons[j] |= mouse_buttons[j];
+            }
+        }
+    }
+    // TODO: Gamepad input scaling
+    this->mouse_pos[0] *= this->mouse_sens_foot;
+    this->mouse_pos[1] *= this->mouse_sens_foot;
+    this->mouse_pos[2] *= this->mouse_sens_foot;
+    // TODO: More Gamepad
+
+    // TODO
 }
 
 // FUNCTION: REDLINE 0x0043C70C

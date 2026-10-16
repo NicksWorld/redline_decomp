@@ -635,5 +635,12 @@ void CInterface::Render(short unk) {
         }
     }
 
+    // if (this->pad3[8]) {
+    //     if (unk) {
+    //         this->mouse_graphic->SetPosition(this->mouse_x, this->mouse->y, 0);
+    //         this->mouse_graphic->Render(0);
+    //     }
+    // }
+
     // TODO
 }

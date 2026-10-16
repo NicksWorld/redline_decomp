@@ -60,4 +60,8 @@ class AudioManager {
     void InitSoundBuffer(SoundBuffer* buf, int first_half);
     void SetMasterVolume(float volume);
     void UpdateListener(ListenerInfo* info);
+
+    void Tick(bool unk);
 };
+
+unsigned long __stdcall AudioMain(void* userdata);

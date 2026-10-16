@@ -237,36 +237,45 @@ bool InitDirectInput();
 void UnacquireInput();
 
 // Exact size unknown
+// VTABLE: REDLINE 0x005864B4
 class InputDevice {
-    // vtable 0x005864B4
     public:
     InputDevice();
 
     virtual ~InputDevice(); // vtable[0];
     virtual int Init(const char* name, HWND window); // vtable[1];
+    virtual bool Acquire();
     virtual bool Unacquire(); // vtable[3];
+    virtual bool Acquired();
+    virtual bool GetKeyState(char keys[256]);
+    virtual bool GetMouseState(short axes[3], int buttons[3]);
+    virtual bool GetGamepadState();
 
     char name[128];
     bool acquired;
     IDirectInputDevice2A* dev;
+
+    DIMOUSESTATE mouseState;
 };
 
-// vtable 0x0058655C
+// VTABLE: REDLINE 0x0058655C
 class MouseDevice : public InputDevice {
     public:
     virtual int Init(const char* name, HWND window);
+    virtual bool GetMouseState(short axes[3], int buttons[3]);
 };
 
-// vtable 0x0058653C
+// VTABLE: REDLINE 0x0058653C
 class JoystickDevice : public InputDevice {
     public:
     virtual int Init(const char* name, HWND window);
     char joy_pad[80];
     bool joy_configured; // if the joystick range/deadzone was successfully configured
     bool multi_pov;
+    virtual bool GetGamepadState();
 };
 
-// vtable 0x005864F8
+// VTABLE: REDLINE 0x005864F8
 class GamepadDevice : public JoystickDevice {
     public:
     virtual int Init(const char* name, HWND window);
@@ -275,12 +284,14 @@ class GamepadDevice : public JoystickDevice {
     int unk2;
     int unk3;
     int unk4;
+    virtual bool GetGamepadState();
 };
 
-// vtable 0x005864D8
+// VTABLE: REDLINE 0x005864D8
 class KeyboardDevice : public InputDevice {
     public:
     virtual int Init(const char* name, HWND window);
+    virtual bool GetKeyState(char keys[256]);
 };
 
 class Keybinds {
@@ -288,7 +299,12 @@ class Keybinds {
     int key_map[281];
     // Action -> keys map?
     int action_map[64][4];
-    char pad[197 * 4];
+    char pad[744];
+    char* keys;
+    int* mouse_buttons;
+    char pad2[24];
+    short mouse_pos[3];
+    char pad3[6];
 
     int key_to_scancode[256];
     int scancode_to_key[256];
@@ -356,6 +372,8 @@ class Keybinds {
     int InitDirectInput();
     int DeinitDirectInput();
     void AddInputDevice(InputDevice* dev, GUID guid, const char* dev_name, int unk);
+
+    void ReadInput();
 
     void UnacquireInput();
 };

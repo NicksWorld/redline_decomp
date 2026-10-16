@@ -306,3 +306,39 @@ void AudioManager::UpdateListener(ListenerInfo* info) {
             this->listener->CommitDeferredSettings();
     }
 }
+
+// GLOBAL: REDLINE 0x005CD15C
+HANDLE g_sigAudioThreadShouldExit;
+// GLOBAL: REDLINE 0x005CD160
+HANDLE g_sigAudioThreadExited;
+// GLOBAL: REDLINE 0x005CD164
+HANDLE g_audioThread;
+// GLOBAL: REDLINE 0x0059B9C4
+int g_AudioEnabled; // Related to music?
+
+// FUNCTION: REDLINE 0x00541485
+unsigned long __stdcall AudioMain(void* userdata) {
+    if (g_AudioEnabled != -1) {
+        while(WaitForSingleObject(g_sigAudioThreadShouldExit, 0) == WAIT_TIMEOUT) {
+            // TODO
+            Sleep(15);
+        }
+    }
+    SetEvent(g_sigAudioThreadExited);
+    ExitThread(0);
+    return 0; // TODO: Noreturn method?
+}
+
+// FUNCTION: REDLINE 0x0053562E
+void AudioManager::Tick(bool unk) {
+    unsigned short i;
+    if (!this->init_res)
+        return;
+    if (unk) {
+        for (i = 0; i < this->channel_count_other; ++i) {
+            // TODO
+        }
+    } else {
+        // TODO
+    }
+}

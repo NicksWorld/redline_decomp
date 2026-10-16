@@ -17,6 +17,10 @@ extern class CInterface* g_Interface;
 extern class CdAudio* g_CdAudio;
 extern class AudioManager* g_Audio;
 
+extern HANDLE g_sigAudioThreadShouldExit, g_sigAudioThreadExited, g_audioThread;
+extern int g_AudioEnabled;
+
+
 extern class RenderHelper* g_RenderHelper;
 
 // GameData script (rough, sizing wrong)

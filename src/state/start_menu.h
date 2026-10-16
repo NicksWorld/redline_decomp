@@ -96,7 +96,14 @@ class MainMenu : public IScreen {
         // void* lbl_version2;
 
         GraphicWidget* startup_banner;
-        char pad3[32];
+
+        short pause_menu_btn_x;
+        short btn_multiplayer_y[2];
+        short btn_settings_y[2];
+        short btn_quit_y[2];
+        short btn_resume_y[2];
+        short btn_resume_x[2];
+        short lbl_version_pos[2][2];
 
         MainMenu();
 

@@ -1,5 +1,6 @@
 #include "start_menu.h"
 
+#include "../audio.h"
 #include "../keybinds.h"
 #include "../interface.h"
 #include "../globals.h"
@@ -131,7 +132,25 @@ bool MainMenu::UnknownInit() {
 // FUNCTION: REDLINE 0x004B1104
 bool MainMenu::AddWidgets() {
     this->unk = 0;
-    // TODO: Bunch of initializations of shorts
+
+    short unused = 100;
+
+    this->pause_menu_btn_x = 235;
+    this->btn_multiplayer_y[0] = 203;
+    this->btn_multiplayer_y[1] = 224;
+    this->btn_settings_y[0] = 228;
+    this->btn_settings_y[1] = 251;
+    this->btn_quit_y[0] = 253;
+    this->btn_quit_y[1] = 277;
+    this->btn_resume_y[0] = 287;
+    this->btn_resume_y[1] = 322;
+    this->btn_resume_x[1] = 294;
+    this->btn_resume_x[0] = 286;
+    this->lbl_version_pos[0][0] = 300;
+    this->lbl_version_pos[0][1] = 302;
+    this->lbl_version_pos[1][0] = 238;
+    this->lbl_version_pos[1][1] = 275;
+
     this->startup_banner = (GraphicWidget*)CreateWidget(WIDGET_GRAPHIC, g_Interface);
     this->startup_banner->SetPosition(257, 102, 0);
     this->startup_banner->active = 0;
@@ -319,17 +338,24 @@ bool MainMenu::Activate() {
         if (g_isMultiplayer) {
             g_Interface->SetBackground("mpbase", 192, 176, 256, 128, 2);
             g_Interface->ActivateBackground(192, 176, 256, 128, 2);
-            // TODO
+            this->btn_multiplayer[1]->SetPosition(this->pause_menu_btn_x, this->btn_multiplayer_y[0], 0);
+            this->btn_settings[1]->SetPosition(this->pause_menu_btn_x, this->btn_settings_y[0], 0);
+            this->btn_quit[1]->SetPosition(this->pause_menu_btn_x, this->btn_quit_y[0], 0);
+            this->btn_resume[0]->SetPosition(this->btn_resume_x[0], this->btn_resume_y[0], 0);
+            this->lbl_version[1]->SetPosition(this->lbl_version_pos[1][0], this->lbl_version_pos[1][1], 0);
         } else {
             g_Interface->SetBackground("PU1_base", 192, 100, 256, 256, 2);
             g_Interface->ActivateBackground(192, 100, 256, 256, 2);
-            // TODO
+            this->btn_multiplayer[1]->SetPosition(this->pause_menu_btn_x, this->btn_multiplayer_y[1], 0);
+            this->btn_settings[1]->SetPosition(this->pause_menu_btn_x, this->btn_settings_y[1], 0);
+            this->btn_quit[1]->SetPosition(this->pause_menu_btn_x, this->btn_quit_y[1], 0);
+            this->btn_resume[0]->SetPosition(this->btn_resume_x[0], this->btn_resume_y[1], 0);
+            this->lbl_version[1]->SetPosition(this->lbl_version_pos[0][0], this->lbl_version_pos[0][1], 0);
         }
     } else {
         this->unk2 = 0;
         g_Interface->SetBackground("2base", 0, 0, 640, 480, 0);
         g_Interface->ActivateBackground(0, 0, 640, 480, 0);
-        // TODO: Call that sets the interface background and stuff
         this->startup_banner->active = true;
     }
     // TODO
@@ -342,7 +368,7 @@ bool MainMenu::Activate() {
         this->btn_load[this->unk2]->active = 1;
     }
     if (this->unk2 == 1) {
-        // TODO this->unk3[unk2] + 48 = !gameplay
+        this->btn_save[this->unk2]->active = !gameplay;
         this->btn_resume[0]->active = 1;
     } else {
         this->btn_credits->active = 1;
@@ -491,6 +517,9 @@ bool StateImpl::StartMenu::Init(int prev_state) {
 
     if (g_QuickRun && prev_state != STATE_GAME_PLAY && !unk) {
         // TODO
+        g_sigAudioThreadShouldExit = NULL;
+        g_sigAudioThreadExited = NULL;
+        g_audioThread = NULL;
     } else if (g_ConsoleEnabled) {
         // TODO
         return true;
@@ -502,11 +531,22 @@ bool StateImpl::StartMenu::Init(int prev_state) {
         }
         // TODO: NOP
         g_StartMenu->unk2 = 1;
-        // TODO: Spawn audio thread
+
+        g_sigAudioThreadShouldExit = CreateEventA(NULL, 0, 0, NULL);
+        g_sigAudioThreadExited = CreateEventA(NULL, 0, 0, NULL);
+        DWORD threadId;
+        g_audioThread = CreateThread(NULL, 0, AudioMain, NULL, 0, &threadId);
     }
+
+    // TODO: Spawn audio thread
     
     void* menu_music = NULL;
     menu_music = g_Scripts.Lookup(SK_Sounds, "Menu_Music", 0);
+    if (menu_music) {
+        // TODO
+    }
+    g_Scripts.Lookup(SK_Sounds, "buttonClick", 0);
+    // TODO: Do something with loaded buttonClick sound
 
     return true;
 }
