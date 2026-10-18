@@ -102,7 +102,11 @@ Keybinds::Keybinds() {
     memset(this->key_map, -1, sizeof(this->key_map));
     memset(this->action_map, 0, sizeof(this->action_map));
 
-    // TODO: Set values in unknown segments
+    this->axis[2] = 0;
+    this->axis[1] = 0;
+    this->axis[0] = 0;
+    this->unk1 = 0;
+
     this->input_devices = NULL;
     this->input_device_count = 0;
     this->input_devices_max = 32;
@@ -599,7 +603,8 @@ int Keybinds::InvalidJoyhatIndex(int idx) {
 
 // FUNCTION: REDLINE 0x00495200
 InputDevice::InputDevice() {
-    // TODO
+    this->acquired = 0;
+    this->dev = NULL;
 }
 
 // SYNTHETIC: REDLINE 0x00496A30
@@ -649,7 +654,7 @@ bool InputDevice::GetMouseState(short axes[3], int buttons[3]) {
     return false;
 }
 // FUNCTION: REDLINE 0x00496AA0
-bool InputDevice::GetGamepadState() {
+bool InputDevice::GetGamepadState(short axis[3], int buttons[13], int hatdir[9]) {
     return false;
 }
 
@@ -778,9 +783,62 @@ int JoystickDevice::Init(const char* name, HWND window) {
 }
 
 // FUNCTION: REDLINE 0x004957E7
-bool JoystickDevice::GetGamepadState() {
-    // TODO
-    return false;
+bool JoystickDevice::GetGamepadState(short axis[3], int buttons[13], int hatdir[9]) {
+    int i, pov;
+
+    bool success = true;
+    this->dev->Poll();
+    int res = this->dev->GetDeviceState(80, &this->joyState);
+    switch (res) {
+        case DI_OK:
+            axis[0] = min(max(-32767, this->joyState.lX), 32767);
+            axis[1] = min(max(-32767, this->joyState.lY), 32767);
+            if (this->joy_configured) {
+                axis[2] = min(max(-32767, this->joyState.lZ), 32767);
+            } else {
+                axis[2] = 0;
+            }
+            for (i = 0; i < 13; ++i) {
+                buttons[i] = this->joyState.rgbButtons[i] & 0x80;
+            }
+            pov = this->joyState.rgdwPOV[0];
+            if ((unsigned short)pov == 0xFFFF || !this->multi_pov) {
+                hatdir[0] = 1;
+                break;
+            }
+            memset(hatdir, 0, 0x24);
+            if (pov > 0x7B0C && pov < 0x08CA)
+                hatdir[1] = 1;
+            else if (pov < 0x1A5E)
+                hatdir[2] = 1;
+            else if (pov < 0x2BF2)
+                hatdir[3] = 1;
+            else if (pov < 0x3D86)
+                hatdir[4] = 1;
+            else if (pov < 0x4F1A)
+                hatdir[5] = 1;
+            else if (pov < 0x60AE)
+                hatdir[6] = 1;
+            else if (pov < 0x7242)
+                hatdir[7] = 1;
+            else
+                hatdir[8] = 1;
+            break;
+        case DIERR_INPUTLOST:
+            if (this->acquired)
+                this->Acquire();
+            success = false;
+            break;
+        case DIERR_NOTACQUIRED:
+            success = false;
+            if (this->acquired)
+                this->Acquire();
+            break;
+        default:
+            success = false;
+            break;
+    }
+    return success;
 }
 
 // FUNCTION: REDLINE 0x00495E26
@@ -797,9 +855,34 @@ int GamepadDevice::Init(const char* name, HWND window) {
 }
 
 // FUNCTION: REDLINE 0x00495E90
-bool GamepadDevice::GetGamepadState() {
-    // TODO
-    return false;
+bool GamepadDevice::GetGamepadState(short axis[3], int buttons[13], int hatdir[9]) {
+    if (!JoystickDevice::GetGamepadState(axis, buttons, hatdir))
+            return false;
+    if(!axis[0])
+        return true;
+    if (axis[0] < 0) {
+        if (this->unk0) {
+            this->unk4 = 0;
+            this->unk0 = 0;
+        }
+        this->unk4 -= this->unk2;
+        axis[0] += LOWORD(this->unk4);
+        if (axis[0] < -this->unk3) {
+            axis[0] = -this->unk3;
+        }
+        this->unk1 = 1;
+    } else {
+        if (this->unk1) {
+            this->unk4 = 0;
+            this->unk1 = 0;
+        }
+        this->unk4 += this->unk2;
+        axis[0] += LOWORD(this->unk4);
+        if (axis[0] > this->unk3)
+            axis[0] = this->unk3;
+        this->unk0 = 1;
+    }
+    return true;
 }
 
 // FUNCTION: REDLINE 0x00495488
@@ -860,20 +943,20 @@ BOOL CALLBACK EnumDinputDevicesCb(LPCDIDEVICEINSTANCE devinst, void* userdata) {
     int dev_type = LOBYTE(devinst->dwDevType);
     switch (dev_type) {
         case DIDEVTYPE_MOUSE:
-            input = new MouseDevice();
+            input = new MouseDevice(); // 0x9C
             break;
 
         case DIDEVTYPE_JOYSTICK:
             LPDIRECTINPUTA dinput;
             int res = DirectInputCreateA(g_hInstance, DIRECTINPUT_VERSION, &dinput, 0);
             if (res) {
-                input = new JoystickDevice();
+                input = new JoystickDevice(); // 0xE0
                 break;
             }
             LPDIRECTINPUTDEVICEA dev = NULL;
             res = dinput->CreateDevice(devinst->guidInstance, &dev, NULL);
             if (res) {
-                input = new JoystickDevice();
+                input = new JoystickDevice(); // 0xE0
                 break;
             }
             DIDEVCAPS caps;
@@ -881,9 +964,9 @@ BOOL CALLBACK EnumDinputDevicesCb(LPCDIDEVICEINSTANCE devinst, void* userdata) {
             if (res)
                 caps.dwFlags = 0;
             if (HIBYTE(LOWORD(devinst->dwDevType)) == DIDEVTYPEJOYSTICK_GAMEPAD) {
-                input = new GamepadDevice();
+                input = new GamepadDevice(); // 0xF0
             } else {
-                input = new JoystickDevice();
+                input = new JoystickDevice(); // 0xE0
             }
             dev->Release();
             dinput->Release();
@@ -977,19 +1060,70 @@ int Keybinds::InitDirectInput() {
     if (g_Joystick_DeadZoneY > 127)
         g_Joystick_DeadZoneY = 127;
 
-    // TODO: Bunch of memsetting into unk segments.
-    // Good for reference on member size
+    memset(this->buf1_keys, 0, sizeof(this->buf1_keys));
+    memset(this->buf1_mbuttons, 0, sizeof(this->buf1_mbuttons));
+    memset(this->buf1_gpad_buttons, 0, sizeof(this->buf1_gpad_buttons));
+    memset(this->buf1_gpad_hat, 0, sizeof(this->buf1_gpad_hat));
+    memset(this->buf2_keys, 0, sizeof(this->buf2_keys));
+    memset(this->buf2_mbuttons, 0, sizeof(this->buf2_mbuttons));
+    memset(this->buf2_gpad_buttons, 0, sizeof(this->buf2_gpad_buttons));
+    memset(this->buf2_gpad_hat, 0, sizeof(this->buf2_gpad_hat));
+    memset(this->buf1_act_bitfield, 0, sizeof(this->buf1_act_bitfield));
+    memset(this->buf2_act_bitfield, 0, sizeof(this->buf2_act_bitfield));
+    this->active_buffer = 0;
+    this->keys = this->buf1_keys;
+    this->mouse_buttons = this->buf1_mbuttons;
+    this->gpad_buttons = this->buf1_gpad_buttons;
+    this->gpad_hat = this->buf1_gpad_hat;
+    this->act_bitfield = this->buf1_act_bitfield;
     return 0;
+}
+
+// FUNCTION: REDLINE 0x0043C7D2
+void ReadInput() {
+    g_Keybinds->ReadInput();
 }
 
 // FUNCTION: REDLINE 0x004971A6
 void Keybinds::ReadInput() {
-    // TODO
-    int i, j;
+    if (this->active_buffer) {
+        this->active_buffer = 0;
+        this->keys = this->buf1_keys;
+        this->mouse_buttons = this->buf1_mbuttons;
+        this->gpad_buttons = this->buf1_gpad_buttons;
+        this->gpad_hat = this->buf1_gpad_hat;
+        this->act_bitfield = this->buf1_act_bitfield;
+    } else {
+        this->active_buffer = 1;
+        this->keys = this->buf2_keys;
+        this->mouse_buttons = this->buf2_mbuttons;
+        this->gpad_buttons = this->buf2_gpad_buttons;
+        this->gpad_hat = this->buf2_gpad_hat;
+        this->act_bitfield = this->buf2_act_bitfield;
+    }
+
     char keys[256];
-    short mouse_axes[3];
-    short mouse_coords[3];
+    short gp_axis[3];
+    short axis[3];
     int mouse_buttons[3];
+    int gamepad_buttons[13];
+    int gamepad_hat[8];
+
+    memset(this->keys, 0, 256);
+    memset(this->mouse_buttons, 0, sizeof(int[3]));
+    memset(this->gpad_buttons, 0, sizeof(int[13]));
+    memset(this->gpad_hat, 0, sizeof(int[9]));
+    memset(axis, 0, sizeof(axis));
+    this->mouse_pos[0] = 0;
+    this->mouse_pos[1] = 0;
+    this->mouse_pos[2] = 0;
+    this->gpad_axis[0] = 0;
+    this->gpad_axis[1] = 0;
+    this->gpad_axis[2] = 0;
+    memset(this->act_bitfield, 0, 8);
+
+    int i;
+    int j;
     for (i = 0; i < this->input_device_count; ++i) {
         if (!this->input_devices[i]->Acquired())
             continue;
@@ -1000,26 +1134,140 @@ void Keybinds::ReadInput() {
             }
         }
 
-        hasInput = this->input_devices[i]->GetMouseState(mouse_axes, mouse_buttons);
+        hasInput = this->input_devices[i]->GetMouseState(gp_axis, mouse_buttons);
         if (hasInput) {
-            mouse_coords[0] = mouse_axes[0];
-            this->mouse_pos[0] = mouse_axes[0];
-            mouse_coords[1] = mouse_axes[1];
-            this->mouse_pos[1] = mouse_axes[1];
-            mouse_coords[2] = mouse_axes[2];
-            this->mouse_pos[2] = mouse_axes[2];
+            axis[0] = gp_axis[0];
+            this->mouse_pos[0] = gp_axis[0];
+            axis[1] = gp_axis[1];
+            this->mouse_pos[1] = gp_axis[1];
+            axis[2] = gp_axis[2];
+            this->mouse_pos[2] = gp_axis[2];
             for (j = 0; j < 3; ++j) {
                 this->mouse_buttons[j] |= mouse_buttons[j];
             }
         }
+
+        hasInput = this->input_devices[i]->GetGamepadState(gp_axis, gamepad_buttons, gamepad_hat);
+        if (hasInput) {
+            if (g_Joystick_DeadZoneX) {
+                if (gp_axis[0] < 0 && gp_axis[0] > -g_Joystick_DeadZoneX)
+                    gp_axis[0] = 0;
+                else if (gp_axis[0] > 0 && gp_axis[0] < g_Joystick_DeadZoneX)
+                    gp_axis[0] = 0;
+            }
+            if (g_Joystick_DeadZoneY) {
+                if (gp_axis[1] < 0 && gp_axis[1] > -g_Joystick_DeadZoneY)
+                    gp_axis[1] = 0;
+                else if (gp_axis[1] > 0 && gp_axis[1] < g_Joystick_DeadZoneY)
+                    gp_axis[1] = 0;
+            }
+            gp_axis[2] = 0;
+
+            // Decide whether to retain mouse input, or use gamepad
+            if (axis[0]) {
+                if (gp_axis[0])
+                    axis[0] = axis[0] > gp_axis[0] ? axis[0] : gp_axis[0];
+            } else {
+                axis[0] = gp_axis[0];
+            }
+            if (axis[1]) {
+                if (gp_axis[0])
+                    axis[1] = axis[1] > gp_axis[1] ? axis[1] : gp_axis[1];
+            } else {
+                axis[1] = gp_axis[1];
+            }
+            if (axis[2]) {
+                if (gp_axis[0])
+                    axis[2] = axis[2] > gp_axis[2] ? axis[2] : gp_axis[2];
+            } else {
+                axis[2] = gp_axis[2];
+            }
+
+            this->gpad_axis[0] = gp_axis[0];
+            this->gpad_axis[1] = gp_axis[1];
+            this->gpad_axis[2] = gp_axis[2];
+
+            for (j = 0; j < 13; ++j)
+                this->gpad_buttons[j] |= gamepad_buttons[j];
+
+            if (gamepad_hat[0] == 1) {
+                if (!this->gpad_hat[0])
+                    this->gpad_hat[0] = 1;
+            } else {
+                for (j = 0; j < 9; ++j)
+                    this->gpad_hat[j] |= gamepad_hat[j];
+            }
+        }
     }
-    // TODO: Gamepad input scaling
+    axis[0] *= this->mouse_sens_foot;
+    axis[1] *= this->mouse_sens_foot;
+    axis[2] *= this->mouse_sens_foot;
     this->mouse_pos[0] *= this->mouse_sens_foot;
     this->mouse_pos[1] *= this->mouse_sens_foot;
     this->mouse_pos[2] *= this->mouse_sens_foot;
-    // TODO: More Gamepad
+    this->gpad_axis[0] *= this->joy_sens_horiz;
+    this->gpad_axis[1] *= this->joy_sens_vert;
+    this->gpad_axis[2] *= this->joy_sens_horiz;
+    this->axis[0] = axis[0];
+    this->axis[1] = axis[1];
+    this->axis[2] = axis[2];
 
-    // TODO
+    // TODO: What is all this?
+    if (g_replayRecord) {
+        // TODO: Why is this unused?
+        bool unused[3];
+        for (int k = 0; k < 3; ++k)
+            unused[k] = this->mouse_buttons[k];
+    } else if (g_replayPlay) {
+        for (int m = 0; m < 3; ++m) {
+            this->mouse_buttons[m] = 128;
+        }
+        this->axis[0] = axis[0];
+        this->axis[1] = axis[1];
+        this->axis[2] = axis[2];
+        this->mouse_pos[0] = axis[0];
+        this->mouse_pos[1] = axis[1];
+        this->mouse_pos[2] = axis[2];
+    }
+
+    int input;
+    int action;
+    for (i = 0; i < 3; ++i) {
+        if (this->mouse_buttons[i]) {
+            input = this->MouseToInput(i);
+            if (this->key_map[input] > -1) {
+                action = this->key_map[input];
+                this->act_bitfield[action / 8] |= 1 << (action % 8);
+            }
+        }
+    }
+    for (i = 0; i < 13; ++i) {
+        if (this->gpad_buttons[i]) {
+            input = this->JoybuttonToInput(i);
+            if (this->key_map[input] > -1) {
+                action = this->key_map[input];
+                this->act_bitfield[action / 8] |= 1 << (action % 8);
+            }
+        }
+    }
+    for (i = 0; i < 9; ++i) {
+        if (this->gpad_hat[i]) {
+            input = this->JoyhatToInput(i);
+            if (this->key_map[input] > -1) {
+                action = this->key_map[input];
+                this->act_bitfield[action / 8] |= 1 << (action % 8);
+            }
+        }
+    }
+    for (i = 0; i < 256; ++i) {
+        if (this->keys[i] < 0) {
+            input = this->JoyhatToInput(i);
+            if (this->key_map[input] > -1) {
+                action = this->key_map[input];
+                this->act_bitfield[action / 8] |= 1 << (action % 8);
+            }
+        }
+    }
 }
 
 // FUNCTION: REDLINE 0x0043C70C

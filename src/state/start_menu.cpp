@@ -569,7 +569,7 @@ bool StateImpl::StartMenu::Shutdown(int next_state) {
 
 // FUNCTION: REDLINE 0x00541235
 bool StateImpl::StartMenu::Tick() {
-    // TODO: Keybinds thing
+    ReadInput();
     // TODO: Audio thing
     // TODO: Start menu call
     // TODO

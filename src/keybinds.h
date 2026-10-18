@@ -230,11 +230,11 @@ char *GetMbuttonName(int idx);
 char *GetJoybuttonName(int idx);
 char *GetJoyhatName(int idx);
 
-
 void SetMouseSensitivityFoot(float sensitivity);
 
 bool InitDirectInput();
 void UnacquireInput();
+void ReadInput();
 
 // Exact size unknown
 // VTABLE: REDLINE 0x005864B4
@@ -249,18 +249,17 @@ class InputDevice {
     virtual bool Acquired();
     virtual bool GetKeyState(char keys[256]);
     virtual bool GetMouseState(short axes[3], int buttons[3]);
-    virtual bool GetGamepadState();
+    virtual bool GetGamepadState(short axis[3], int buttons[13], int hatdir[9]);
 
     char name[128];
     bool acquired;
     IDirectInputDevice2A* dev;
-
-    DIMOUSESTATE mouseState;
 };
 
 // VTABLE: REDLINE 0x0058655C
 class MouseDevice : public InputDevice {
     public:
+    DIMOUSESTATE mouseState;
     virtual int Init(const char* name, HWND window);
     virtual bool GetMouseState(short axes[3], int buttons[3]);
 };
@@ -269,10 +268,10 @@ class MouseDevice : public InputDevice {
 class JoystickDevice : public InputDevice {
     public:
     virtual int Init(const char* name, HWND window);
-    char joy_pad[80];
+    DIJOYSTATE joyState;
     bool joy_configured; // if the joystick range/deadzone was successfully configured
     bool multi_pov;
-    virtual bool GetGamepadState();
+    virtual bool GetGamepadState(short axis[3], int buttons[13], int hatdir[9]);
 };
 
 // VTABLE: REDLINE 0x005864F8
@@ -284,7 +283,7 @@ class GamepadDevice : public JoystickDevice {
     int unk2;
     int unk3;
     int unk4;
-    virtual bool GetGamepadState();
+    virtual bool GetGamepadState(short axis[3], int buttons[13], int hatdir[8]);
 };
 
 // VTABLE: REDLINE 0x005864D8
@@ -299,12 +298,40 @@ class Keybinds {
     int key_map[281];
     // Action -> keys map?
     int action_map[64][4];
-    char pad[744];
+
+    // Bitfield of triggered actions
+    char *act_bitfield;
+    char buf1_act_bitfield[8];
+    char buf2_act_bitfield[8];
+
+    short axis[3];
+
+    bool unk1;
+
+    // Which buffer of inputs is actively being read to (0 -> buf1, 1-> buf2)
+    int active_buffer;
+
+    // Inputs from buffer1
+    char buf1_keys[256];
+    int buf1_mbuttons[3];
+    int buf1_gpad_buttons[13];
+    int buf1_gpad_hat[9];
+
+    // Inputs from buffer2
+    char buf2_keys[256];
+    int buf2_mbuttons[3];
+    int buf2_gpad_buttons[13];
+    int buf2_gpad_hat[9];
+
+    // Pointers into currently active input buffer
     char* keys;
     int* mouse_buttons;
-    char pad2[24];
+    int* gpad_buttons;
+    int* gpad_hat;
+
+    char pad2[16];
     short mouse_pos[3];
-    char pad3[6];
+    short gpad_axis[3];
 
     int key_to_scancode[256];
     int scancode_to_key[256];
